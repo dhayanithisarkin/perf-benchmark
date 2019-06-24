@@ -15,14 +15,14 @@ def convert_to_csv(results: [TaggedValidationResult], file_name):
                 baseline_tag_to_stats[tagged_stats.tag] = tagged_stats.stats
 
         for tagged_stats in result.run_stats:
-            tag = tagged_stats.tag or ''
+            tag = tagged_stats.tag
             line = [
-                result.metric.name + '.' + tag,
+                result.metric.name + '.' + (tag or ''),
                 result.metric.query,
                 tagged_stats.stats['mean'],
                 baseline_tag_to_stats[tag]['mean'],
                 tagged_stats.stats['90%'],
-                baseline_tag_to_stats[tag]['mean'],
+                baseline_tag_to_stats[tag]['90%'],
             ]
             lines.append(line)
 

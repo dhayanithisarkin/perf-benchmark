@@ -37,7 +37,7 @@ for metric in indexer_metrics:
 metrics = [disk_util, message_age]
 metrics.extend(indexer_metrics)
 
-metrics = [program_time]
+metrics = [disk_util]
 results = validate_benchmark_run(metrics, baseline_time, run_time)
 convert_to_csv(results, '/tmp/perf_benchmark.csv')
 

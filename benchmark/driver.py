@@ -15,7 +15,9 @@ message_age = Metric("message age",
 # Grid metrics
 program_time = Metric("Program time",
                       'mdiff(1h, sum(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did))
-grid_metrics = [program_time]
+metric_cache_miss_rate = Metric("Miss rate",
+                                'mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.miss_300.count, did="{}"))) * 100 / mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.gets_300.count, did="{}")))'.format(did, did))
+grid_metrics = [metric_cache_miss_rate]
 for metric in grid_metrics:
     metric.category = Category.GRID
 
@@ -35,9 +37,9 @@ for metric in indexer_metrics:
 
 
 metrics = [disk_util, message_age]
+metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
 
-metrics = [disk_util]
 results = validate_benchmark_run(metrics, baseline_time, run_time)
 convert_to_csv(results, '/tmp/perf_benchmark.csv')
 

@@ -68,6 +68,9 @@ def response_tostats(api_response, df_tostats):
     :return: A list of TaggedStats object for each tag present in the metric.
     """
     timeseries = api_response.timeseries
+    if timeseries is None:
+        print("ERROR: timeseries not found for " + api_response.name)
+        return []
 
     if len(timeseries) == 1:
         df = to_df(timeseries[0].data)

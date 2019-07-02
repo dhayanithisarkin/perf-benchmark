@@ -83,6 +83,7 @@ def validate_benchmark_run(
     """
     validation_results = []
     for metric in metrics:
+        print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
         current_run_stats = response_tostats(current_run_response, stats)
         result = TaggedValidationResult(metric, current_run_stats)

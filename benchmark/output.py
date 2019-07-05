@@ -6,23 +6,15 @@ def convert_to_csv(results: [TaggedValidationResult], file_name):
     lines = []
 
     for result in results:
-        # get the baseline stats into a dict form
-        # so that lookups based on tag values can be performed
-        # this will be a dict of tagvalue -> stats(percentiles)
-        baseline_tag_to_stats = {}
-        if result.baseline_stats is not None:
-            for tagged_stats in result.baseline_stats:
-                baseline_tag_to_stats[tagged_stats.tag] = tagged_stats.stats
+        metric = result.metric
 
-        for tagged_stats in result.run_stats:
-            tag = tagged_stats.tag
+        for tag, change_result in result.tag_to_change_results.items():
             line = [
-                result.metric.name + '.' + (tag or ''),
-                result.metric.query,
-                tagged_stats.stats['mean'],
-                baseline_tag_to_stats[tag]['mean'],
-                tagged_stats.stats['90%'],
-                baseline_tag_to_stats[tag]['90%'],
+                metric.name + '.' + (tag or ''),
+                metric.query,
+                change_result.baseline_value,
+                change_result.current_value,
+                'FAILED' if change_result.is_failure else 'PASSED'
             ]
             lines.append(line)
 

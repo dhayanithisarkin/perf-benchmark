@@ -2,7 +2,8 @@ from __future__ import print_function
 import wavefront_api_client
 from wavefront_api_client.rest import ApiException
 from benchmark.utils import response_tostats
-from enum import Enum
+from enum import Enum, auto
+import pandas as pd
 
 
 prod_config = wavefront_api_client.Configuration()
@@ -33,19 +34,44 @@ class Category(Enum):
     GRID = 3
     INDEXER = 4
     REST_API = 5
+    UPTIME = 6
+
+
+# Various skus in the system
+class Sku(Enum):
+    PLATFORM = 'platform'
+    PROXY = 'proxy'
+
+
+# Various processes in the system
+class Process(Enum):
+    RESTAPILAYER = ('restapilayer', Sku.PLATFORM)
+    ELASTICSEARCH = ('elasticsearch', Sku.PLATFORM)
+    SAMZA = ('samza-container', Sku.PLATFORM)
+    SAASLISTENER = ('saaslistener', Sku.PLATFORM)
+    LAUNCHER = ('launcher', Sku.PLATFORM)
+
+    def process_name(self):
+        return self.value[0]
+
+    def sku(self):
+        return self.value[1].value
 
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query):
+    def __init__(self, name, query, compare_with='mean'):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
+        :param compare_with: The metric to use for comparing with baseline, valid
+        values are 'mean' or percentiles (e.g '90%').
         """
         self.name = name
         self.query = query
         self.priority = Priority.LOW
         self.category = Category.UNKNOWN
+        self.compare_with = compare_with
 
     def set_priority(self, priority):
         self.priority = priority
@@ -55,19 +81,105 @@ class Metric:
 
 
 class TaggedStats:
+    """
+    Stores the stats for a particular metric, tag combination.
+    self.stats is a pandas series with the following keys:
+    count, mean, std, min, 10%, 25%, 50%, 75%, 90% 95%, max
+    """
     def __init__(self, tag, percentile_stats):
         self.tag = tag
         self.stats = percentile_stats
 
+    def is_empty(self):
+        return self.stats['count'] == 0
+
+
+class TagMetricChangeResult:
+
+    def __init__(self,
+                 tag,
+                 current_value,
+                 baseline_value=None,
+                 is_failure=False):
+        """
+        :param tag: the metric tag
+        :param current_value: current value for this metric, tag combination
+        :param baseline_value: baseline value for this metric, tag combination
+        :param is_failure: boolean indicating if this is a failure
+        """
+        self.tag = tag
+        self.baseline_value = baseline_value
+        self.current_value = current_value
+        self.is_failure = is_failure
+        self.baseline_percentiles = None
+        self.current_percentiles = None
+
+    def set_baseline_percentiles(self, percentiles):
+        self.baseline_percentiles = percentiles
+
+    def set_current_percentiles(self, percentiles):
+        self.current_percentiles = percentiles
+
 
 class TaggedValidationResult:
+    """
+    This is a the result of the metric evaluation for a metric. If a metric has multiple timeseries
+    due to a tag, then this object stores the evaluation stats of all the tags for that metric.
+    """
     def __init__(self, metric, tagged_stats):
         self.metric = metric
         self.run_stats = tagged_stats
         self.baseline_stats = None
+        self.tag_to_change_results = None
 
     def set_baseline_stats(self, baseline_stats):
         self.baseline_stats = baseline_stats
+
+    def analyse(self):
+        """
+        Analyse the stats and identify pass/failure
+        Returns nothing but stores the state of the analysis self.tag_to_change_results
+        """
+        tag_to_change_results = {}
+        for tagged_stats in self.run_stats:
+            tag = tagged_stats.tag
+            if not tagged_stats.is_empty():
+                current_value = tagged_stats.stats[self.metric.compare_with]
+                change_result = TagMetricChangeResult(tag, current_value)
+                change_result.set_current_percentiles(tagged_stats.stats)
+                tag_to_change_results[tag] = change_result
+        if self.baseline_stats is not None:
+            for bl_tagged_stats in self.baseline_stats:
+                tag = bl_tagged_stats.tag
+                if not bl_tagged_stats.is_empty():
+                    baseline_value = bl_tagged_stats.stats[self.metric.compare_with]
+                    if tag in tag_to_change_results:
+                        tag_to_change_results[tag].baseline_value = baseline_value
+                    else:
+                        tag_to_change_results[tag] = TagMetricChangeResult(tag, None, baseline_value)
+                    tag_to_change_results[tag].set_baseline_percentiles(bl_tagged_stats.stats)
+                else:
+                    tag_to_change_results[tag].baseline_value = None
+        self.__mark_failures(tag_to_change_results)
+        self.tag_to_change_results = tag_to_change_results
+
+    def get_analysis_results(self):
+        return self.tag_to_change_results
+
+    @staticmethod
+    def __mark_failures(tag_to_change_results):
+        for tag, change_result in tag_to_change_results.items():
+            bv = change_result.baseline_value
+            cv = change_result.current_value
+
+            change_result.is_failure = False
+
+            if bv is None and cv is None:
+                change_result.is_failure = False
+            elif bv is None or cv is None:
+                change_result.is_failure = True
+            elif 100 * abs(bv - cv) / bv > 20:
+                change_result.is_failure = True
 
 
 def validate_benchmark_run(
@@ -93,6 +205,7 @@ def validate_benchmark_run(
             baseline_stats = response_tostats(baseline_response, stats)
             result.set_baseline_stats(baseline_stats)
 
+        result.analyse()
         validation_results.append(result)
     return validation_results
 
@@ -135,4 +248,12 @@ def stats(df, tag=None):
     """
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-    return TaggedStats(tag, percentiles)
+
+    # Append the first and last value to the stats.
+    # These are useful while doing uptime check for restarts.
+    first_val = df['value'].iloc[0]
+    last_val = df['value'].iloc[-1]
+    uptime = pd.Series([first_val, last_val], index=['first', 'last'])
+
+    percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
+    return TaggedStats(tag, percentiles_uptime)

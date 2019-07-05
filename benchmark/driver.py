@@ -1,4 +1,4 @@
-from benchmark.query import Metric, validate_benchmark_run, Category
+from benchmark.query import Metric, validate_benchmark_run, Category, Process
 from benchmark.utils import timerange_yesterday, timerange_daybeforeyesterday
 from benchmark.output import convert_to_csv
 
@@ -17,6 +17,9 @@ program_time = Metric("Program time",
                       'mdiff(1h, sum(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did))
 metric_cache_miss_rate = Metric("Miss rate",
                                 'mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.miss_300.count, did="{}"))) * 100 / mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.gets_300.count, did="{}")))'.format(did, did))
+denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
+                              'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did))
+
 grid_metrics = [metric_cache_miss_rate]
 for metric in grid_metrics:
     metric.category = Category.GRID
@@ -36,10 +39,19 @@ for metric in indexer_metrics:
     metric.category = Category.INDEXER
 
 
+# uptime metrics
+uptime_metrics = []
+for p in Process:
+    m = Metric(p.sku() + '.' + p.process_name(),
+               'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()))
+    m.category = Category.UPTIME
+    uptime_metrics.append(m)
+
+
 metrics = [disk_util, message_age]
 metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
+metrics.extend(uptime_metrics)
 
 results = validate_benchmark_run(metrics, baseline_time, run_time)
 convert_to_csv(results, '/tmp/perf_benchmark.csv')
-

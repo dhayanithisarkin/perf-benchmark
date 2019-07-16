@@ -1,0 +1,52 @@
+\documentclass{article}
+\usepackage[margin=0.1in]{geometry}
+\usepackage{pgfplotstable}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{ifthen}
+\pgfplotsset{compat=1.16}
+\usepackage{lscape}
+\usepackage{booktabs, makecell, multirow, tabularx}
+\usepackage{longtable}
+\usepackage{tabu} % if you want
+\usepackage{colortbl,dcolumn}
+
+\begin{document}
+
+
+%\begin{landscape}
+\begin{table}
+\begin{center}
+\pgfplotstabletypeset[%
+	font={\small},
+	verb string type,
+	before row=\hline,every last row/.style={after row=\hline},
+	display columns/0/.style={
+		column name=\textbf{{Query Id}},
+		column type={|c}
+		},
+	display columns/1/.style={
+		column name=\textbf{{Metric}},
+		column type={|c}
+		},
+	display columns/2/.style={
+		column name=\textbf{{Base Value}},
+		column type={|c}
+		},
+	display columns/3/.style={
+		column name=\textbf{{Current Value}},
+		column type={|c}
+		},
+	display columns/4/.style={
+		column name=\textbf{{Result}},
+		column type={|c|},
+		postproc cell content/.append code={
+		\ifthenelse{\equal{##1}{\string PASSED}} {\pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}}} {\pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}}}
+		},
+		},
+	col sep=colon]{"./tmp/benchmark_result.csv"}
+\end{center}
+\end{table}
+
+%\end{landscape}
+\end{document}

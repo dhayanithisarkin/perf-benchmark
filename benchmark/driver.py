@@ -1,6 +1,6 @@
-from benchmark.query import Metric, validate_benchmark_run, Category, Process
 from benchmark.utils import timerange_yesterday, timerange_daybeforeyesterday
 from benchmark.output import convert_to_csv
+from benchmark.query import Metric, validate_benchmark_run, Category, Process
 
 did = 'DP8SZFH'  # Homedepot
 
@@ -54,4 +54,4 @@ metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)
 
 results = validate_benchmark_run(metrics, baseline_time, run_time)
-convert_to_csv(results, '/tmp/perf_benchmark.csv')
+convert_to_csv(results, './tmp/benchmark_result.csv','./tmp/query_info.csv')

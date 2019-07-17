@@ -2,7 +2,7 @@ from benchmark.utils import timerange_yesterday, timerange_daybeforeyesterday
 from benchmark.output import convert_to_csv
 from benchmark.query import Metric, validate_benchmark_run, Category, Process
 
-did = 'DP8SZFH'  # Homedepot
+did = 'DP10XVX'  # Homedepot
 
 baseline_time = timerange_daybeforeyesterday()
 run_time = timerange_yesterday()
@@ -42,8 +42,9 @@ for metric in indexer_metrics:
 # uptime metrics
 uptime_metrics = []
 for p in Process:
+    print(p.process_name(),"****",p.sku())
     m = Metric(p.sku() + '.' + p.process_name(),
-               'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()))
+               'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()),compare_with='restart')
     m.category = Category.UPTIME
     uptime_metrics.append(m)
 

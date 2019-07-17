@@ -4,7 +4,7 @@ from wavefront_api_client.rest import ApiException
 from benchmark.utils import response_tostats
 from enum import Enum, auto
 import pandas as pd
-
+import numpy as np
 
 prod_config = wavefront_api_client.Configuration()
 prod_config.host = "https://varca.wavefront.com"
@@ -246,9 +246,10 @@ def stats(df, tag=None):
     :param df: dataframe containing the timeseries(time, values)
     :return: percentiles and min and max
     """
+    x = df['value'].to_numpy()
+    restart_count = (np.ediff1d(x,to_begin=0)< 0).sum()
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-
     # Append the first and last value to the stats.
     # These are useful while doing uptime check for restarts.
     first_val = df['value'].iloc[0]

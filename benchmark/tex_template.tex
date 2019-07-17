@@ -10,6 +10,7 @@
 \usepackage{longtable}
 \usepackage{tabu} % if you want
 \usepackage{colortbl,dcolumn}
+\usepackage{stringstrings}
 
 \begin{document}
 
@@ -41,7 +42,8 @@
 		column name=\textbf{{Result}},
 		column type={|c|},
 		postproc cell content/.append code={
-		\ifthenelse{\equal{##1}{\string PASSED}} {\pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}}} {\pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}}}
+		\testmatchingchar{##1}{1}{P}
+        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi. 
 		},
 		},
 	col sep=colon]{"./tmp/benchmark_result.csv"}

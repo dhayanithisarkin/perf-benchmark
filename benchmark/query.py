@@ -236,6 +236,7 @@ def validate_benchmark_run(
     :return: list of ValidationResult objects
     """
     validation_results = []
+    uptime_results = []
     for metric in metrics:
         print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
@@ -253,9 +254,9 @@ def validate_benchmark_run(
         else:
             result = TaggedValidationResultUptime(metric, current_run_stats)
             result.analyse()
-            validation_results.append(result)
+            uptime_results.append(result)
 
-    return validation_results
+    return validation_results, uptime_results
 
 
 def query_wf(

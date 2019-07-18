@@ -18,6 +18,7 @@
 %\begin{landscape}
 \begin{table}
 \begin{center}
+\caption{Result of Validation Metrices}
 \pgfplotstabletypeset[%
 	font={\small},
 	verb string type,
@@ -43,10 +44,37 @@
 		column type={|c|},
 		postproc cell content/.append code={
 		\testmatchingchar{##1}{1}{P}
-        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi. 
+        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi
 		},
 		},
 	col sep=colon]{"./tmp/benchmark_result.csv"}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Result of Uptime Metrices}
+\pgfplotstabletypeset[%
+	font={\small},
+	verb string type,
+	before row=\hline,every last row/.style={after row=\hline},
+	display columns/0/.style={
+		column name=\textbf{{Process.tag}},
+		column type={|c}
+		},
+	display columns/1/.style={
+		column name=\textbf{{Number of Restarts}},
+		column type={|c}
+		},
+	display columns/2/.style={
+		column name=\textbf{{Result}},
+		column type={|c|},
+		postproc cell content/.append code={
+		\testmatchingchar{##1}{1}{P}
+        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi
+		},
+		},
+	col sep=colon]{"./tmp/uptime_result.csv"}
 \end{center}
 \end{table}
 

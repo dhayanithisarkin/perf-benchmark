@@ -1,11 +1,24 @@
-from benchmark.utils import timerange_yesterday, timerange_daybeforeyesterday
+from benchmark.utils import timerange_yesterday, timerange_daybeforeyesterday, get_timerange
 from benchmark.output import convert_to_csv
 from benchmark.query import Metric, validate_benchmark_run, Category, Process
+import argparse
+parser = argparse.ArgumentParser()
 
-did = 'DP10XVX'  # Homedepot
+parser.add_argument("-did",type=str,help="did for wavefront",default="DP10XVX")
+parser.add_argument("-w","--window",type=int,help="Window of wavefront in days",default=1)
+parser.add_argument("-cw","--current_window",type=int,help="Current time of wavefront in days [0 for today, 1 for yesterday ans so on] [0 default]",default=0)
+parser.add_argument("-bw","--base_window",type=int,help="Baseline time of wavefront in days [0 for today, 1 for yesterday ans so on] [1 default]",default=1)
 
-baseline_time = timerange_daybeforeyesterday()
-run_time = timerange_yesterday()
+args = parser.parse_args()
+did = args.did
+
+print("Current stats from: (today-",args.current_window+args.window,") to (today-",args.current_window,")")
+print("Baseline stats from: (today-",args.base_window+args.window,") to (today-",args.base_window,")")
+
+# baseline_time = timerange_daybeforeyesterday()
+# run_time = timerange_yesterday()
+baseline_time = get_timerange(args.base_window+args.window,args.base_window)
+run_time = get_timerange(args.current_window+args.window,args.current_window)
 
 disk_util = Metric("disk utilization",
                    'avg(ts(dd.system.io.util, did="{}" and iid="*" and source="*" and role="platform" and device="dm-6"))'.format(did))
@@ -20,7 +33,7 @@ metric_cache_miss_rate = Metric("Miss rate",
 denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
                               'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did))
 
-grid_metrics = [metric_cache_miss_rate]
+grid_metrics = [metric_cache_miss_rate,program_time,denorm_latency_by_ot]
 for metric in grid_metrics:
     metric.category = Category.GRID
 
@@ -42,7 +55,6 @@ for metric in indexer_metrics:
 # uptime metrics
 uptime_metrics = []
 for p in Process:
-    print(p.process_name(),"****",p.sku())
     m = Metric(p.sku() + '.' + p.process_name(),
                'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()),compare_with='restart')
     m.category = Category.UPTIME

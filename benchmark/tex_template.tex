@@ -11,35 +11,36 @@
 \usepackage{tabu} % if you want
 \usepackage{colortbl,dcolumn}
 \usepackage{stringstrings}
-
+\usepackage{longtable}
 \begin{document}
-
-
+\begin{sloppypar}
 %\begin{landscape}
-\begin{table}
+% \caption{Result of Validation Metrices}
 \begin{center}
-\caption{Result of Validation Metrices}
 \pgfplotstabletypeset[%
 	font={\small},
+	begin table=\begin{longtable},
+	end table=\end{longtable},
 	verb string type,
 	before row=\hline,every last row/.style={after row=\hline},
+	every first row/.append style=before row={\caption{Result of Validation Metrices}},%,
+	% display columns/0/.style={
+	% 	column name=\textbf{{Query Id}},
+	% 	column type={|c}
+	% 	},
 	display columns/0/.style={
-		column name=\textbf{{Query Id}},
-		column type={|c}
+		column name=\textbf{{Metric}},
+		column type={|m{11cm}}
 		},
 	display columns/1/.style={
-		column name=\textbf{{Metric}},
-		column type={|c}
-		},
-	display columns/2/.style={
 		column name=\textbf{{Base Value}},
 		column type={|c}
 		},
-	display columns/3/.style={
+	display columns/2/.style={
 		column name=\textbf{{Current Value}},
 		column type={|c}
 		},
-	display columns/4/.style={
+	display columns/3/.style={
 		column name=\textbf{{Result}},
 		column type={|c|},
 		postproc cell content/.append code={
@@ -48,11 +49,11 @@
 		},
 		},
 	col sep=colon]{"./tmp/benchmark_result.csv"}
-\end{center}
-\end{table}
 
+\end{center}
 \begin{table}
 \begin{center}
+
 \caption{Result of Uptime Metrices}
 \pgfplotstabletypeset[%
 	font={\small},
@@ -75,8 +76,9 @@
 		},
 		},
 	col sep=colon]{"./tmp/uptime_result.csv"}
+
 \end{center}
 \end{table}
-
 %\end{landscape}
+\end{sloppypar}
 \end{document}

@@ -187,6 +187,7 @@ class TaggedValidationResultUptime:
     """
     This is a the result of the metric evaluation for a metric. If a metric has multiple timeseries
     due to a tag, then this object stores the evaluation stats of all the tags for that metric.
+    This is special class for all the uptime metrices. Is independent of baseline stats.
     """
     def __init__(self, metric, tagged_stats):
         self.metric = metric
@@ -195,7 +196,7 @@ class TaggedValidationResultUptime:
 
     def analyse(self):
         """
-        Analyse the stats and identify pass/failure
+        Analyse the stats[restart_count] and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
         tag_to_change_results = {}
@@ -295,18 +296,17 @@ def stats(df, tag=None):
     :param df: dataframe containing the timeseries(time, values)
     :return: percentiles and min and max
     """
+
+    # calculate linear difference in uptime. If difference fall to negative value,
+    # It means program has restarted.
     x = df['value'].to_numpy()
     restart_count = (np.ediff1d(x,to_begin=0)< 0).sum()
 
-    print(restart_count)
-
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-    # Append the first and last value to the stats.
-    # These are useful while doing uptime check for restarts.
-    first_val = df['value'].iloc[0]
-    last_val = df['value'].iloc[-1]
-    uptime = pd.Series([first_val, last_val,restart_count], index=['first', 'last','restart'])
+    # Append the restart count value to the stats.
+    # This is useful while doing uptime check for restarts.
+    uptime = pd.Series([restart_count], index=['restart'])
 
     percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
     return TaggedStats(tag, percentiles_uptime)

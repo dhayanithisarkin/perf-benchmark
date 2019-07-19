@@ -13,7 +13,6 @@ def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results:
 
         for tag, change_result in result.tag_to_change_results.items():
             line = [
-                count,
                 metric.name + '.' + (tag or ''),
                 change_result.baseline_value,
                 change_result.current_value,

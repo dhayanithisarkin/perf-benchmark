@@ -10,6 +10,15 @@ def to_epoch_range(start, end):
     return start_epoch * 1000, end_epoch * 1000
 
 
+# Returns the epoch time of (start_day to end_day) wrt to TODAY
+def get_timerange(start_day, end_day):
+    today = datetime.date.today()
+    start = today - datetime.timedelta(days=start_day)
+    end = today - datetime.timedelta(days=end_day)
+
+    return to_epoch_range(start, end)
+
+
 # Returns the epoch time of (now() - 24hrs, now())
 def timerange_last24hours():
     current_time = datetime.datetime.now()

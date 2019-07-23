@@ -67,4 +67,4 @@ metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)
 
 validation_results, uptime_results = validate_benchmark_run(metrics, baseline_time, run_time)
-convert_to_csv(validation_results, uptime_results ,'./tmp/benchmark_result.csv','./tmp/query_info.csv','./tmp/uptime_result.csv')
+convert_to_csv(validation_results, uptime_results ,'./tmp/benchmark_result','./tmp/query_info.csv','./tmp/uptime_result.csv')

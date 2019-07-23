@@ -1,10 +1,10 @@
 \documentclass{article}
-\usepackage[margin=0.1in]{geometry}
+\usepackage[margin=2mm]{geometry}
 \usepackage{pgfplotstable}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{ifthen}
-\pgfplotsset{compat=1.16}
+\pgfplotsset{compat=1.14}
 \usepackage{lscape}
 \usepackage{booktabs, makecell, multirow, tabularx}
 \usepackage{longtable}
@@ -12,22 +12,18 @@
 \usepackage{colortbl,dcolumn}
 \usepackage{stringstrings}
 \usepackage{longtable}
+
 \begin{document}
 \begin{sloppypar}
 %\begin{landscape}
-% \caption{Result of Validation Metrices}
-\begin{center}
+\textbf{Result of Indexer Metrices}\\
 \pgfplotstabletypeset[%
 	font={\small},
+	header=false,
 	begin table=\begin{longtable},
 	end table=\end{longtable},
 	verb string type,
 	before row=\hline,every last row/.style={after row=\hline},
-	every first row/.append style=before row={\caption{Result of Validation Metrices}},%,
-	% display columns/0/.style={
-	% 	column name=\textbf{{Query Id}},
-	% 	column type={|c}
-	% 	},
 	display columns/0/.style={
 		column name=\textbf{{Metric}},
 		column type={|m{11cm}}
@@ -50,12 +46,41 @@
 		},
 	col sep=colon]{"./tmp/benchmark_result.csv"}
 
-\end{center}
+\textbf{Result of Grid Metrices}\\
+\pgfplotstabletypeset[%
+	font={\small},
+	header=false,
+	begin table=\begin{longtable},
+	end table=\end{longtable},
+	verb string type,
+	before row=\hline,every last row/.style={after row=\hline},
+	display columns/0/.style={
+		column name=\textbf{{Metric}},
+		column type={|m{11cm}}
+		},
+	display columns/1/.style={
+		column name=\textbf{{Base Value}},
+		column type={|c}
+		},
+	display columns/2/.style={
+		column name=\textbf{{Current Value}},
+		column type={|c}
+		},
+	display columns/3/.style={
+		column name=\textbf{{Result}},
+		column type={|c|},
+		postproc cell content/.append code={
+		\testmatchingchar{##1}{1}{P}
+        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi
+		},
+		},
+	col sep=colon]{"./tmp/benchmark_result_g.csv"}
 \begin{table}
 \begin{center}
 
 \caption{Result of Uptime Metrices}
 \pgfplotstabletypeset[%
+	header=false,
 	font={\small},
 	verb string type,
 	before row=\hline,every last row/.style={after row=\hline},

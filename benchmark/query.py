@@ -4,7 +4,7 @@ from wavefront_api_client.rest import ApiException
 from benchmark.utils import response_tostats
 from enum import Enum, auto
 import pandas as pd
-
+import numpy as np
 
 prod_config = wavefront_api_client.Configuration()
 prod_config.host = "https://varca.wavefront.com"
@@ -182,6 +182,49 @@ class TaggedValidationResult:
                 change_result.is_failure = True
 
 
+
+class TaggedValidationResultUptime:
+    """
+    This is a the result of the metric evaluation for a metric. If a metric has multiple timeseries
+    due to a tag, then this object stores the evaluation stats of all the tags for that metric.
+    This is special class for all the uptime metrices. Is independent of baseline stats.
+    """
+    def __init__(self, metric, tagged_stats):
+        self.metric = metric
+        self.run_stats = tagged_stats
+        self.tag_to_change_results = None
+
+    def analyse(self):
+        """
+        Analyse the stats[restart_count] and identify pass/failure
+        Returns nothing but stores the state of the analysis self.tag_to_change_results
+        """
+        tag_to_change_results = {}
+        for tagged_stats in self.run_stats:
+            tag = tagged_stats.tag
+            if not tagged_stats.is_empty():
+                current_value = tagged_stats.stats[self.metric.compare_with]
+                change_result = TagMetricChangeResult(tag, current_value)
+                change_result.set_current_percentiles(tagged_stats.stats)
+                tag_to_change_results[tag] = change_result
+        self.__mark_failures(tag_to_change_results)
+        self.tag_to_change_results = tag_to_change_results
+
+    def get_analysis_results(self):
+        return self.tag_to_change_results
+
+    @staticmethod
+    def __mark_failures(tag_to_change_results):
+        for tag, change_result in tag_to_change_results.items():
+            cv = change_result.current_value
+
+            change_result.is_failure = False
+
+            if cv is None:
+                change_result.is_failure = False
+            elif cv>0:
+                change_result.is_failure = True
+
 def validate_benchmark_run(
         metrics,
         run_timerange,
@@ -194,20 +237,27 @@ def validate_benchmark_run(
     :return: list of ValidationResult objects
     """
     validation_results = []
+    uptime_results = []
     for metric in metrics:
         print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
         current_run_stats = response_tostats(current_run_response, stats)
-        result = TaggedValidationResult(metric, current_run_stats)
+        
+        if metric.category != Category.UPTIME:
+            result = TaggedValidationResult(metric, current_run_stats)
+            # print(current_run_stats[0].stats['restart'])
+            if baseline_timerange:
+                baseline_response = query_wf(metric.query, baseline_timerange)
+                baseline_stats = response_tostats(baseline_response, stats)
+                result.set_baseline_stats(baseline_stats)
+            result.analyse()
+            validation_results.append(result)
+        else:
+            result = TaggedValidationResultUptime(metric, current_run_stats)
+            result.analyse()
+            uptime_results.append(result)
 
-        if baseline_timerange:
-            baseline_response = query_wf(metric.query, baseline_timerange)
-            baseline_stats = response_tostats(baseline_response, stats)
-            result.set_baseline_stats(baseline_stats)
-
-        result.analyse()
-        validation_results.append(result)
-    return validation_results
+    return validation_results, uptime_results
 
 
 def query_wf(
@@ -246,14 +296,17 @@ def stats(df, tag=None):
     :param df: dataframe containing the timeseries(time, values)
     :return: percentiles and min and max
     """
+
+    # calculate linear difference in uptime. If difference fall to negative value,
+    # It means program has restarted.
+    x = df['value'].to_numpy()
+    restart_count = (np.ediff1d(x,to_begin=0)< 0).sum()
+
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-
-    # Append the first and last value to the stats.
-    # These are useful while doing uptime check for restarts.
-    first_val = df['value'].iloc[0]
-    last_val = df['value'].iloc[-1]
-    uptime = pd.Series([first_val, last_val], index=['first', 'last'])
+    # Append the restart count value to the stats.
+    # This is useful while doing uptime check for restarts.
+    uptime = pd.Series([restart_count], index=['restart'])
 
     percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
     return TaggedStats(tag, percentiles_uptime)

@@ -1,11 +1,15 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.pdf
 *$py.class
-
+*.idea/
+*.aux
+*sublime*
+*DS_Store*
 # C extensions
 *.so
-
+tmp/
 # Distribution / packaging
 .Python
 build/

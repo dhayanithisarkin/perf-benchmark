@@ -159,7 +159,7 @@ class TaggedValidationResult:
                         tag_to_change_results[tag] = TagMetricChangeResult(tag, None, baseline_value)
                     tag_to_change_results[tag].set_baseline_percentiles(bl_tagged_stats.stats)
                 else:
-                    tag_to_change_results[tag].baseline_value = None
+                    tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
         self.__mark_failures(tag_to_change_results)
         self.tag_to_change_results = tag_to_change_results
 

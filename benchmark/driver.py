@@ -4,16 +4,16 @@ from benchmark.query import Metric, validate_benchmark_run, Category, Process
 import argparse
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-did",type=str,help="did for wavefront",default="DP10XVX")
-parser.add_argument("-w","--window",type=int,help="Window of wavefront in days",default=1)
-parser.add_argument("-cw","--current_window",type=int,help="Current time of wavefront in days [0 for today, 1 for yesterday ans so on] [0 default]",default=0)
-parser.add_argument("-bw","--base_window",type=int,help="Baseline time of wavefront in days [0 for today, 1 for yesterday ans so on] [1 default]",default=1)
+parser.add_argument("-did", type=str, help="did for wavefront", default="DP10XVX")
+parser.add_argument("-w", "--window", type=int, help="Window of wavefront in days",default=1)
+parser.add_argument("-cw", "--current_window", type=int, help="Current time of wavefront in days [0 for today, 1 for yesterday ans so on] [0 default]",default=0)
+parser.add_argument("-bw", "--base_window", type=int, help="Baseline time of wavefront in days [0 for today, 1 for yesterday ans so on] [1 default]",default=1)
 
 args = parser.parse_args()
 did = args.did
 
-print("Current stats from: (today-",args.current_window+args.window,") to (today-",args.current_window,")")
-print("Baseline stats from: (today-",args.base_window+args.window,") to (today-",args.base_window,")")
+print("Current stats from: (today-",args.current_window+args.window,") to (today-", args.current_window, ")")
+print("Baseline stats from: (today-",args.base_window+args.window,") to (today-", args.base_window, ")")
 
 # baseline_time = timerange_daybeforeyesterday()
 # run_time = timerange_yesterday()
@@ -68,4 +68,4 @@ metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)
 
 validation_results, uptime_results = validate_benchmark_run(metrics, baseline_time, run_time)
-convert_to_csv(validation_results, uptime_results ,'./tmp/benchmark_result','./tmp/query_info.csv','./tmp/uptime_result.csv')
+convert_to_csv(validation_results, uptime_results, './tmp/benchmark_result', './tmp/query_info.csv', './tmp/uptime_result.csv')

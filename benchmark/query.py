@@ -18,7 +18,6 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
 
-
 # Priority of metrics. High priority metric breaches will
 # be highlighted first
 class Priority(Enum):
@@ -60,7 +59,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean'):
+    def __init__(self, name, query, compare_with='mean', thresold = "20"):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -72,6 +71,7 @@ class Metric:
         self.priority = Priority.LOW
         self.category = Category.UNKNOWN
         self.compare_with = compare_with
+        self.thresold = thresold
 
     def set_priority(self, priority):
         self.priority = priority
@@ -113,6 +113,9 @@ class TagMetricChangeResult:
         self.is_failure = is_failure
         self.baseline_percentiles = None
         self.current_percentiles = None
+
+    def __repr__(self):
+        return "Tag : " + (self.tag if self.tag is not None else "None")  + ", Base Value : " + str(self.baseline_value) + ", Current Value : " + str(self.current_value)
 
     def set_baseline_percentiles(self, percentiles):
         self.baseline_percentiles = percentiles
@@ -166,8 +169,7 @@ class TaggedValidationResult:
     def get_analysis_results(self):
         return self.tag_to_change_results
 
-    @staticmethod
-    def __mark_failures(tag_to_change_results):
+    def __mark_failures(self,tag_to_change_results):
         for tag, change_result in tag_to_change_results.items():
             bv = change_result.baseline_value
             cv = change_result.current_value
@@ -178,7 +180,7 @@ class TaggedValidationResult:
                 change_result.is_failure = False
             elif bv is None or cv is None:
                 change_result.is_failure = True
-            elif 100 * abs(bv - cv) / bv > 20:
+            elif 100 * abs(bv - cv) / bv > self.metric.thresold:
                 change_result.is_failure = True
 
 

@@ -21,29 +21,30 @@ baseline_time = get_timerange(args.base_window+args.window,args.base_window)
 run_time = get_timerange(args.current_window+args.window,args.current_window)
 
 disk_util = Metric("disk utilization",
-                   'avg(ts(dd.system.io.util, did="{}" and iid="*" and source="*" and role="platform" and device="dm-6"))'.format(did))
+                   'avg(ts(dd.system.io.util, did="{}" and iid="*" and source="*" and role="platform" and device="dm-6"))'.format(did),thresold = 10)
 message_age = Metric("message age",
-                     'avg(ts(dd.vRNI.GenericStreamTask.messageAge.mean, did="{}"))'.format(did))
-
+                     'avg(ts(dd.vRNI.GenericStreamTask.messageAge.mean, did="{}"))'.format(did),thresold = 10)
+input_sdm = Metric("Input SDM",'mdiff(1h, avg(ts(dd.vRNI.UploadHandler.sdm, did="{}"), sdm))'.format(did),thresold = 10)
 # Grid metrics
 program_time = Metric("Program time",
-                      'mdiff(1h, sum(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did))
+                      'mdiff(1h, sum(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did),thresold = 10)
+object_churn = Metric("Object Churn",'mdiff(1h, sum(ts(dd.vRNI.ConfigStore.churn, did="{}"), ot, churn_type))'.format(did),thresold = 10)
 metric_cache_miss_rate = Metric("Miss rate",
-                                'mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.miss_300.count, did="{}"))) * 100 / mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.gets_300.count, did="{}")))'.format(did, did))
+                                'mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.miss_300.count, did="{}"))) * 100 / mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.gets_300.count, did="{}")))'.format(did, did),thresold = 10)
 denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
-                              'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did))
+                              'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did),thresold = 10)
 
-grid_metrics = [metric_cache_miss_rate,program_time,denorm_latency_by_ot]
+grid_metrics = [metric_cache_miss_rate,program_time,denorm_latency_by_ot,object_churn]
 for metric in grid_metrics:
     metric.category = Category.GRID
 
 # Indexer metrics
 index_lag = Metric("Indexer Lag",
-                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did))
+                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did),thresold = 10)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
-                               'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did))
+                               'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),thresold = 10)
 es_heap_usage = Metric("ES Heap usage",
-                       'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did))
+                       'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did),thresold = 10)
 indexer_metrics = [
     index_lag,
     indexed_docs_per_hour,
@@ -56,12 +57,12 @@ for metric in indexer_metrics:
 uptime_metrics = []
 for p in Process:
     m = Metric(p.sku() + '.' + p.process_name(),
-               'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()),compare_with='restart')
+               'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did, p.sku(), p.process_name()),compare_with='restart',thresold = 10)
     m.category = Category.UPTIME
     uptime_metrics.append(m)
 
 
-metrics = [disk_util, message_age]
+metrics = [disk_util, message_age,input_sdm]
 metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)

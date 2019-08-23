@@ -5,7 +5,7 @@ then
     mkdir -p ./tmp
 fi
 
-python ./benchmark/driver.py -did DP10XVX -w 1 -cw 1 -bw 2
+python ./benchmark/driver.py -did DPSZ9NG -w 1 -cw 0 -bw 1
 
 pdflatex ./benchmark/tex_template.tex
 rm tex_template.aux

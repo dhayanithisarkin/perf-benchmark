@@ -14,7 +14,6 @@
 \usepackage{longtable}
 
 \begin{document}
-\begin{sloppypar}
 %\begin{landscape}
 \textbf{Result of Indexer Metrices}\\
 \pgfplotstabletypeset[%
@@ -75,13 +74,14 @@
 		},
 		},
 	col sep=colon]{"./tmp/benchmark_result_g.csv"}
-\begin{table}
-\begin{center}
 
-\caption{Result of Uptime Metrices}
+\begin{center}
+\textbf{Result of Uptime Metrices}\\
 \pgfplotstabletypeset[%
 	header=false,
 	font={\small},
+	begin table=\begin{longtable},
+	end table=\end{longtable},
 	verb string type,
 	before row=\hline,every last row/.style={after row=\hline},
 	display columns/0/.style={
@@ -101,9 +101,6 @@
 		},
 		},
 	col sep=colon]{"./tmp/uptime_result.csv"}
-
 \end{center}
-\end{table}
-%\end{landscape}
-\end{sloppypar}
+
 \end{document}

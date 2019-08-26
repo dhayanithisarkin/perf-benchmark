@@ -59,7 +59,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', thresold = "20"):
+    def __init__(self, name, query, compare_with='mean', thresold = 20):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -180,7 +180,7 @@ class TaggedValidationResult:
                 change_result.is_failure = False
             elif bv is None or cv is None:
                 change_result.is_failure = True
-            elif 100 * abs(bv - cv) / bv > self.metric.thresold:
+            elif 100 * abs(bv - cv) / abs(bv) > self.metric.thresold:
                 change_result.is_failure = True
 
 

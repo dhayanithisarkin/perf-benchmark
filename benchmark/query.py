@@ -18,6 +18,7 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
 
+
 # Priority of metrics. High priority metric breaches will
 # be highlighted first
 class Priority(Enum):
@@ -59,7 +60,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', thresold = 20):
+    def __init__(self, name, query, compare_with='mean', thresold=20):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -86,6 +87,7 @@ class TaggedStats:
     self.stats is a pandas series with the following keys:
     count, mean, std, min, 10%, 25%, 50%, 75%, 90% 95%, max
     """
+
     def __init__(self, tag, percentile_stats):
         self.tag = tag
         self.stats = percentile_stats
@@ -115,7 +117,8 @@ class TagMetricChangeResult:
         self.current_percentiles = None
 
     def __repr__(self):
-        return "Tag : " + (self.tag if self.tag is not None else "None")  + ", Base Value : " + str(self.baseline_value) + ", Current Value : " + str(self.current_value)
+        return "Tag : " + (self.tag if self.tag is not None else "None") + ", Base Value : " + str(
+            self.baseline_value) + ", Current Value : " + str(self.current_value)
 
     def set_baseline_percentiles(self, percentiles):
         self.baseline_percentiles = percentiles
@@ -129,6 +132,7 @@ class TaggedValidationResult:
     This is a the result of the metric evaluation for a metric. If a metric has multiple timeseries
     due to a tag, then this object stores the evaluation stats of all the tags for that metric.
     """
+
     def __init__(self, metric, tagged_stats):
         self.metric = metric
         self.run_stats = tagged_stats
@@ -169,7 +173,7 @@ class TaggedValidationResult:
     def get_analysis_results(self):
         return self.tag_to_change_results
 
-    def __mark_failures(self,tag_to_change_results):
+    def __mark_failures(self, tag_to_change_results):
         for tag, change_result in tag_to_change_results.items():
             bv = change_result.baseline_value
             cv = change_result.current_value
@@ -184,13 +188,13 @@ class TaggedValidationResult:
                 change_result.is_failure = True
 
 
-
 class TaggedValidationResultUptime:
     """
     This is a the result of the metric evaluation for a metric. If a metric has multiple timeseries
     due to a tag, then this object stores the evaluation stats of all the tags for that metric.
     This is special class for all the uptime metrices. Is independent of baseline stats.
     """
+
     def __init__(self, metric, tagged_stats):
         self.metric = metric
         self.run_stats = tagged_stats
@@ -224,8 +228,9 @@ class TaggedValidationResultUptime:
 
             if cv is None:
                 change_result.is_failure = False
-            elif cv>0:
+            elif cv > 0:
                 change_result.is_failure = True
+
 
 def validate_benchmark_run(
         metrics,
@@ -244,7 +249,7 @@ def validate_benchmark_run(
         print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
         current_run_stats = response_tostats(current_run_response, stats)
-        
+
         if metric.category != Category.UPTIME:
             result = TaggedValidationResult(metric, current_run_stats)
             # print(current_run_stats[0].stats['restart'])
@@ -302,7 +307,7 @@ def stats(df, tag=None):
     # calculate linear difference in uptime. If difference fall to negative value,
     # It means program has restarted.
     x = df['value'].to_numpy()
-    restart_count = (np.ediff1d(x,to_begin=0)< 0).sum()
+    restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
 
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])

@@ -5,6 +5,7 @@ from benchmark.utils import response_tostats
 from enum import Enum, auto
 import pandas as pd
 import numpy as np
+import math
 
 prod_config = wavefront_api_client.Configuration()
 prod_config.host = "https://varca.wavefront.com"
@@ -142,19 +143,33 @@ class TaggedValidationResult:
     def set_baseline_stats(self, baseline_stats):
         self.baseline_stats = baseline_stats
 
+    def get_thresold_to_filter(self):
+        lst = ["Program time"]
+        if self.metric.name in lst:
+            count = 0
+            for tagged_stats in self.run_stats:
+                tag = tagged_stats.tag
+                count += tagged_stats.stats[self.metric.compare_with]
+            filter_thresold = count * 0.05 / len(self.run_stats)
+            return filter_thresold
+        else:
+            return -math.inf
+
     def analyse(self):
         """
         Analyse the stats and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
+        filter_thresold = self.get_thresold_to_filter()
         tag_to_change_results = {}
         for tagged_stats in self.run_stats:
             tag = tagged_stats.tag
             if not tagged_stats.is_empty():
                 current_value = tagged_stats.stats[self.metric.compare_with]
-                change_result = TagMetricChangeResult(tag, current_value)
-                change_result.set_current_percentiles(tagged_stats.stats)
-                tag_to_change_results[tag] = change_result
+                if current_value > filter_thresold:
+                    change_result = TagMetricChangeResult(tag, current_value)
+                    change_result.set_current_percentiles(tagged_stats.stats)
+                    tag_to_change_results[tag] = change_result
         if self.baseline_stats is not None:
             for bl_tagged_stats in self.baseline_stats:
                 tag = bl_tagged_stats.tag
@@ -162,9 +177,6 @@ class TaggedValidationResult:
                     baseline_value = bl_tagged_stats.stats[self.metric.compare_with]
                     if tag in tag_to_change_results:
                         tag_to_change_results[tag].baseline_value = baseline_value
-                    else:
-                        tag_to_change_results[tag] = TagMetricChangeResult(tag, None, baseline_value)
-                    tag_to_change_results[tag].set_baseline_percentiles(bl_tagged_stats.stats)
                 else:
                     tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
         self.__mark_failures(tag_to_change_results)
@@ -308,12 +320,27 @@ def stats(df, tag=None):
     # It means program has restarted.
     x = df['value'].to_numpy()
     restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
-
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
     # Append the restart count value to the stats.
     # This is useful while doing uptime check for restarts.
     uptime = pd.Series([restart_count], index=['restart'])
+
+    percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
+    return TaggedStats(tag, percentiles_uptime)
+
+
+def filtered_stats(df, tag=None):
+    x = df['value'].to_numpy()
+    restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
+
+    x = x[x >= 0]
+    total_count = x.sum()
+    percentiles = pd.DataFrame(x).describe(
+        percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
+    # Append the restart count value to the stats.
+    # This is useful while doing uptime check for restarts.
+    uptime = pd.Series([restart_count, total_count], index=['restart', 'total_count'])
 
     percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
     return TaggedStats(tag, percentiles_uptime)

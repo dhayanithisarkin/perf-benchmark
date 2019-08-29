@@ -62,7 +62,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', thresold=20):
+    def __init__(self, name, query, compare_with='mean', threshold=20):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -74,7 +74,7 @@ class Metric:
         self.priority = Priority.LOW
         self.category = Category.UNKNOWN
         self.compare_with = compare_with
-        self.thresold = thresold
+        self.threshold = threshold
 
     def set_priority(self, priority):
         self.priority = priority
@@ -144,7 +144,7 @@ class TaggedValidationResult:
     def set_baseline_stats(self, baseline_stats):
         self.baseline_stats = baseline_stats
 
-    def get_thresold_to_filter(self):
+    def get_threshold_to_filter(self):
         if self.metric.name in lst:
             value_array = []
             total_sum = 0
@@ -171,7 +171,7 @@ class TaggedValidationResult:
         Analyse the stats and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
-        filtered_tags = self.get_thresold_to_filter()
+        filtered_tags = self.get_threshold_to_filter()
         tag_to_change_results = {}
         for tagged_stats in self.run_stats:
             tag = tagged_stats.tag
@@ -207,7 +207,7 @@ class TaggedValidationResult:
                 change_result.is_failure = False
             elif bv is None or cv is None:
                 change_result.is_failure = True
-            elif 100 * abs(bv - cv) / abs(bv) > self.metric.thresold:
+            elif 100 * abs(bv - cv) / abs(bv) > self.metric.threshold:
                 change_result.is_failure = True
 
 

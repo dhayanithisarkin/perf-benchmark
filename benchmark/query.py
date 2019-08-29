@@ -144,24 +144,32 @@ class TaggedValidationResult:
     def set_baseline_stats(self, baseline_stats):
         self.baseline_stats = baseline_stats
 
-    def get_threshold_to_filter(self):
+    def get_filtered_tags(self):
         if self.metric.name in lst:
+            # value_array = []
+            # total_sum = 0
+            # for tagged_stats in self.run_stats:
+            #     total_sum += tagged_stats.stats["total_count"]  # Getting Days reading
+            #     value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
+            # value_array.sort(key=lambda x: x[1])  # sorting according to total_count
+            #
+            # threshold = total_sum * 0.01  # to threshold
+            # sum = 0
+            # print(value_array)
+            # for i in range(0, len(value_array)):
+            #     sum += value_array[i][1]
+            #     if sum > threshold:  # As soon as sum reaches thresholded value, break and store rest of tags
+            #         break
+            #     # print(sum,total_sum,i)
+            # filtered_tags = [row[0] for row in value_array[i:]]
             value_array = []
-            total_sum = 0
             for tagged_stats in self.run_stats:
-                total_sum += tagged_stats.stats["total_count"]  # Getting Days reading
                 value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
+
             value_array.sort(key=lambda x: x[1])  # sorting according to total_count
 
-            threshold = total_sum * 0.01  # to threshold
-            sum = 0
-            print(value_array)
-            for i in range(0, len(value_array)):
-                sum += value_array[i][1]
-                if sum > threshold:  # As soon as sum reaches thresholded value, break and store rest of tags
-                    break
-                # print(sum,total_sum,i)
-            filtered_tags = [row[0] for row in value_array[i:]]
+            filtered_tags = [row[0] for row in value_array[-20:]] #Top 20 candicates
+            print(filtered_tags)
             return filtered_tags
         else:
             return [row.tag for row in self.run_stats]
@@ -171,7 +179,7 @@ class TaggedValidationResult:
         Analyse the stats and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
-        filtered_tags = self.get_threshold_to_filter()
+        filtered_tags = self.get_filtered_tags()
         tag_to_change_results = {}
         for tagged_stats in self.run_stats:
             tag = tagged_stats.tag

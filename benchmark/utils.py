@@ -53,7 +53,7 @@ def multiseries_to_stats(multiseries, df_tostats):
         raw_data = ts.data
         tags = ts.tags
 
-        assert(len(tags) == 1, 'Expected 1 tag, but found' + str(len(tags)))
+        assert (len(tags) == 1, 'Expected 1 tag, but found' + str(len(tags)))
 
         tag = list(tags.values())[0]
         result.append(df_tostats(to_df(raw_data), tag))

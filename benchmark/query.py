@@ -18,6 +18,7 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 # create an instance of the API class
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
+lst = ["Program time"]
 
 
 # Priority of metrics. High priority metric breaches will
@@ -144,29 +145,39 @@ class TaggedValidationResult:
         self.baseline_stats = baseline_stats
 
     def get_thresold_to_filter(self):
-        lst = ["Program time"]
         if self.metric.name in lst:
-            count = 0
+            value_array = []
+            total_sum = 0
             for tagged_stats in self.run_stats:
-                tag = tagged_stats.tag
-                count += tagged_stats.stats[self.metric.compare_with]
-            filter_thresold = count * 0.05 / len(self.run_stats)
-            return filter_thresold
+                total_sum += tagged_stats.stats["total_count"]  # Getting Days reading
+                value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
+            value_array.sort(key=lambda x: x[1])  # sorting according to total_count
+
+            threshold = total_sum * 0.01  # to threshold
+            sum = 0
+            print(value_array)
+            for i in range(0, len(value_array)):
+                sum += value_array[i][1]
+                if sum > threshold:  # As soon as sum reaches thresholded value, break and store rest of tags
+                    break
+                # print(sum,total_sum,i)
+            filtered_tags = [row[0] for row in value_array[i:]]
+            return filtered_tags
         else:
-            return -math.inf
+            return [row.tag for row in self.run_stats]
 
     def analyse(self):
         """
         Analyse the stats and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
-        filter_thresold = self.get_thresold_to_filter()
+        filtered_tags = self.get_thresold_to_filter()
         tag_to_change_results = {}
         for tagged_stats in self.run_stats:
             tag = tagged_stats.tag
             if not tagged_stats.is_empty():
-                current_value = tagged_stats.stats[self.metric.compare_with]
-                if current_value > filter_thresold:
+                if tagged_stats.tag in filtered_tags:
+                    current_value = tagged_stats.stats[self.metric.compare_with]
                     change_result = TagMetricChangeResult(tag, current_value)
                     change_result.set_current_percentiles(tagged_stats.stats)
                     tag_to_change_results[tag] = change_result
@@ -260,14 +271,14 @@ def validate_benchmark_run(
     for metric in metrics:
         print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
-        current_run_stats = response_tostats(current_run_response, stats)
+        current_run_stats = response_tostats(current_run_response, filtered_stats)
 
         if metric.category != Category.UPTIME:
             result = TaggedValidationResult(metric, current_run_stats)
             # print(current_run_stats[0].stats['restart'])
             if baseline_timerange:
                 baseline_response = query_wf(metric.query, baseline_timerange)
-                baseline_stats = response_tostats(baseline_response, stats)
+                baseline_stats = response_tostats(baseline_response, filtered_stats)
                 result.set_baseline_stats(baseline_stats)
             result.analyse()
             validation_results.append(result)
@@ -325,7 +336,6 @@ def stats(df, tag=None):
     # Append the restart count value to the stats.
     # This is useful while doing uptime check for restarts.
     uptime = pd.Series([restart_count], index=['restart'])
-
     percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
     return TaggedStats(tag, percentiles_uptime)
 
@@ -333,14 +343,11 @@ def stats(df, tag=None):
 def filtered_stats(df, tag=None):
     x = df['value'].to_numpy()
     restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
-
     x = x[x >= 0]
     total_count = x.sum()
-    percentiles = pd.DataFrame(x).describe(
+    y = pd.DataFrame({'value': x})
+    percentiles = y['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-    # Append the restart count value to the stats.
-    # This is useful while doing uptime check for restarts.
     uptime = pd.Series([restart_count, total_count], index=['restart', 'total_count'])
-
-    percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
+    percentiles_uptime = pd.concat([percentiles, uptime])
     return TaggedStats(tag, percentiles_uptime)

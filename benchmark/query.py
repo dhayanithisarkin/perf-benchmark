@@ -18,7 +18,7 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 # create an instance of the API class
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
-lst = ["Program time"]
+lst = ["Program time","Denorm Latency By Object Type","Input SDM"]
 
 
 # Priority of metrics. High priority metric breaches will
@@ -167,7 +167,7 @@ class TaggedValidationResult:
                 value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
 
             value_array.sort(key=lambda x: x[1])  # sorting according to total_count
-
+            print(len(value_array),value_array)
             filtered_tags = [row[0] for row in value_array[-20:]] #Top 20 candicates
             print(filtered_tags)
             return filtered_tags
@@ -196,7 +196,7 @@ class TaggedValidationResult:
                     baseline_value = bl_tagged_stats.stats[self.metric.compare_with]
                     if tag in tag_to_change_results:
                         tag_to_change_results[tag].baseline_value = baseline_value
-                else:
+                elif tag in filtered_tags:
                     tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
         self.__mark_failures(tag_to_change_results)
         self.tag_to_change_results = tag_to_change_results

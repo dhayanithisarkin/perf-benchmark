@@ -18,7 +18,12 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 # create an instance of the API class
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
-lst = ["Program time","Denorm Latency By Object Type","Input SDM"]
+lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
+
+
+class run_time_stats():
+    totol_current_time = 86400.0
+    total_base_time = 86400.0
 
 
 # Priority of metrics. High priority metric breaches will
@@ -62,7 +67,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', threshold=20):
+    def __init__(self, name, query, compare_with='mean', threshold=20, lower_the_better=True):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -75,6 +80,7 @@ class Metric:
         self.category = Category.UNKNOWN
         self.compare_with = compare_with
         self.threshold = threshold
+        self.lower_the_better = lower_the_better
 
     def set_priority(self, priority):
         self.priority = priority
@@ -167,8 +173,8 @@ class TaggedValidationResult:
                 value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
 
             value_array.sort(key=lambda x: x[1])  # sorting according to total_count
-            print(len(value_array),value_array)
-            filtered_tags = [row[0] for row in value_array[-20:]] #Top 20 candicates
+            print(len(value_array), value_array)
+            filtered_tags = [row[0] for row in value_array[-20:]]  # Top 20 candicates
             print(filtered_tags)
             return filtered_tags
         else:
@@ -196,6 +202,8 @@ class TaggedValidationResult:
                     baseline_value = bl_tagged_stats.stats[self.metric.compare_with]
                     if tag in tag_to_change_results:
                         tag_to_change_results[tag].baseline_value = baseline_value
+                elif tag in tag_to_change_results:
+                    tag_to_change_results[tag].baseline_value = None
                 elif tag in filtered_tags:
                     tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
         self.__mark_failures(tag_to_change_results)
@@ -215,6 +223,10 @@ class TaggedValidationResult:
                 change_result.is_failure = False
             elif bv is None or cv is None:
                 change_result.is_failure = True
+            elif self.metric.lower_the_better and cv < bv:
+                change_result.is_failure = False
+            elif (not self.metric.lower_the_better) and bv < cv:
+                change_result.is_failure = False
             elif 100 * abs(bv - cv) / abs(bv) > self.metric.threshold:
                 change_result.is_failure = True
 
@@ -294,8 +306,34 @@ def validate_benchmark_run(
             result = TaggedValidationResultUptime(metric, current_run_stats)
             result.analyse()
             uptime_results.append(result)
+        if metric.name == "Program time":
+            result = grid_utilisation(current_run_stats, baseline_stats)
+            validation_results.append(result)
 
     return validation_results, uptime_results
+
+
+def grid_utilisation(current_run_stats, baseline_stats):
+    global run_time_stats
+    current_utilisation = 0;
+    base_utilisation = 0;
+    for tagged_stats in current_run_stats:
+        current_utilisation += tagged_stats.stats["total_count"]
+    for tagged_stats in baseline_stats:
+        base_utilisation += tagged_stats.stats["total_count"]
+
+    grid_utilisation_metric = Metric("Grid Utilisation",
+                                     'DUMMY',
+                                     threshold=20)
+    grid_utilisation_metric.set_category(Category.GRID)
+    current_stat = current_utilisation / (10 * run_time_stats.totol_current_time)
+    base_stat = base_utilisation / (10 * run_time_stats.total_base_time)
+    result = TaggedValidationResult(grid_utilisation_metric, current_stat)
+    result.set_baseline_stats(base_stat)
+    mark_result = TagMetricChangeResult(tag=None, current_value=current_stat, baseline_value=base_stat,
+                                        is_failure=False)
+    result.tag_to_change_results = {None: mark_result}
+    return result
 
 
 def query_wf(

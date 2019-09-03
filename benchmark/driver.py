@@ -1,6 +1,6 @@
 from benchmark.utils import to_epoch_range
 from benchmark.output import convert_to_csv
-from benchmark.query import Metric, validate_benchmark_run, Category, Process
+from benchmark.query import Metric, validate_benchmark_run, Category, Process, run_time_stats
 import argparse
 import datetime
 
@@ -33,6 +33,13 @@ print("Current stats from:", args.current_start, "to", args.current_end)
 print("Base stats from:", args.base_start, "to", args.base_end)
 # baseline_time = timerange_daybeforeyesterday()
 # run_time = timerange_yesterday()
+run_time_stats.totol_current_time = (
+            datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.base_start,
+                                                                                                  "%Y-%m-%d-%H")).total_seconds();
+run_time_stats.total_base_time = (
+            datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.current_start,
+                                                                                                     "%Y-%m-%d-%H")).total_seconds();
+
 baseline_time = to_epoch_range(datetime.datetime.strptime(args.base_start, "%Y-%m-%d-%H"),
                                datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H"))
 run_time = to_epoch_range(datetime.datetime.strptime(args.current_start, "%Y-%m-%d-%H"),
@@ -40,23 +47,24 @@ run_time = to_epoch_range(datetime.datetime.strptime(args.current_start, "%Y-%m-
 
 disk_util = Metric("disk utilization",
                    'avg(ts(dd.system.io.util, did="{}" and iid="*" and source="*" and role="platform" and device="dm-6"))'.format(
-                       did), threshold=10)
+                       did), threshold=20)
 message_age = Metric("message age",
-                     'avg(ts(dd.vRNI.GenericStreamTask.messageAge.mean, did="{}"))'.format(did), threshold=10)
-input_sdm = Metric("Input SDM", 'mdiff(1h, avg(ts(dd.vRNI.UploadHandler.sdm, did="{}"), sdm))'.format(did), threshold=10)
+                     'avg(ts(dd.vRNI.GenericStreamTask.messageAge.mean, did="{}"))'.format(did), threshold=20)
+input_sdm = Metric("Input SDM", 'mdiff(1h, avg(ts(dd.vRNI.UploadHandler.sdm, did="{}"), sdm))'.format(did),
+                   threshold=20)
 # Grid metrics
 program_time = Metric("Program time",
-                      'mdiff(1h, sum(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did),
-                      threshold=10)
+                      'mdiff(1h, avg(ts(dd.vRNI.GenericStreamTask.processorConsumption, did="{}"), pid))'.format(did),
+                      threshold=20)
 object_churn = Metric("Object Churn",
                       'mdiff(1h, sum(ts(dd.vRNI.ConfigStore.churn, did="{}"), ot, churn_type))'.format(did),
-                      threshold=10)
+                      threshold=20)
 metric_cache_miss_rate = Metric("Miss rate",
                                 'mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.miss_300.count, did="{}"))) * 100 / mdiff(1h, avg(ts(dd.vRNI.CachedAlignedMetricStore.gets_300.count, did="{}")))'.format(
-                                    did, did), threshold=10)
+                                    did, did), threshold=20)
 denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
                               'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did),
-                              threshold=10)
+                              threshold=20)
 
 grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, object_churn]
 for metric in grid_metrics:
@@ -64,12 +72,12 @@ for metric in grid_metrics:
 
 # Indexer metrics
 index_lag = Metric("Indexer Lag",
-                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=10)
+                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
-                               threshold=10)
+                               threshold=20)
 es_heap_usage = Metric("ES Heap usage",
-                       'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), threshold=10)
+                       'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), threshold=20)
 indexer_metrics = [
     index_lag,
     indexed_docs_per_hour,
@@ -84,7 +92,7 @@ for p in Process:
                'avg(ts(dd.system.processes.run_time.avg, did="{}" and sku={} and process_name={}), iid)'.format(did,
                                                                                                                 p.sku(),
                                                                                                                 p.process_name()),
-               compare_with='restart', threshold=10)
+               compare_with='restart', threshold=20)
     m.category = Category.UPTIME
     uptime_metrics.append(m)
 

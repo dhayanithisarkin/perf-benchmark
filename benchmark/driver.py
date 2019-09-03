@@ -1,6 +1,6 @@
 from benchmark.utils import to_epoch_range
 from benchmark.output import convert_to_csv
-from benchmark.query import Metric, validate_benchmark_run, Category, Process, run_time_stats
+from benchmark.query import Metric, validate_benchmark_run, Category, Process, RuntimeStats
 import argparse
 import datetime
 
@@ -11,13 +11,6 @@ day_before_yesterdays_time = current_time - datetime.timedelta(days=2)
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
-# parser.add_argument("-w", "--window", type=int, help="Window of wavefront in days", default=1)
-# parser.add_argument("-cw", "--current_window", type=int,
-#                     help="Current time of wavefront in days [0 for today, 1 for yesterday ans so on] [0 default]",
-#                     default=0)
-# parser.add_argument("-bw", "--base_window", type=int,
-#                     help="Baseline time of wavefront in days [0 for today, 1 for yesterday ans so on] [1 default]",
-#                     default=1) .strftime("%Y-%m-%d-%H")
 parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame",
                     default=yesterdays_time.strftime("%Y-%m-%d-%H"))
 parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame",
@@ -33,10 +26,10 @@ print("Current stats from:", args.current_start, "to", args.current_end)
 print("Base stats from:", args.base_start, "to", args.base_end)
 # baseline_time = timerange_daybeforeyesterday()
 # run_time = timerange_yesterday()
-run_time_stats.totol_current_time = (
+RuntimeStats.totol_current_time = (
             datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.base_start,
                                                                                                   "%Y-%m-%d-%H")).total_seconds();
-run_time_stats.total_base_time = (
+RuntimeStats.total_base_time = (
             datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.current_start,
                                                                                                      "%Y-%m-%d-%H")).total_seconds();
 
@@ -102,5 +95,4 @@ metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)
 
 validation_results, uptime_results = validate_benchmark_run(metrics, baseline_time, run_time)
-convert_to_csv(validation_results, uptime_results, './tmp/benchmark_result', './tmp/query_info.csv',
-               './tmp/uptime_result.csv')
+convert_to_csv(validation_results, uptime_results)

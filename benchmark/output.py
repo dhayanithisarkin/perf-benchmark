@@ -3,11 +3,13 @@ from benchmark.query import TaggedValidationResult
 from benchmark.query import TaggedValidationResultUptime, Category
 
 
-def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results: [TaggedValidationResultUptime],
-                   benchmark_result, query_info, uptimeinfo):
+def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results: [TaggedValidationResultUptime]):
     validation_lines_i = []
     validation_lines_g = []
     uptime_lines = []
+    benchmark_result = './tmp/benchmark_result'
+    query_info = './tmp/query_info.csv'
+    uptimeinfo = './tmp/uptime_result.csv'
     count = 0
     lsti = []
     lstg = []

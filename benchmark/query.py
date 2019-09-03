@@ -21,9 +21,9 @@ prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient
 lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
 
 
-class run_time_stats():
-    totol_current_time = 86400.0
-    total_base_time = 86400.0
+class RuntimeStats():
+    totol_current_time = -1
+    total_base_time = -1
 
 
 # Priority of metrics. High priority metric breaches will
@@ -155,9 +155,9 @@ class TaggedValidationResult:
             # value_array = []
             # total_sum = 0
             # for tagged_stats in self.run_stats:
-            #     total_sum += tagged_stats.stats["total_count"]  # Getting Days reading
-            #     value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
-            # value_array.sort(key=lambda x: x[1])  # sorting according to total_count
+            #     total_sum += tagged_stats.stats["cumulative_value"]  # Getting Days reading
+            #     value_array.append([tagged_stats.tag, tagged_stats.stats["cumulative_value"]])  # storing tags as well
+            # value_array.sort(key=lambda x: x[1])  # sorting according to cumulative_value
             #
             # threshold = total_sum * 0.01  # to threshold
             # sum = 0
@@ -170,9 +170,9 @@ class TaggedValidationResult:
             # filtered_tags = [row[0] for row in value_array[i:]]
             value_array = []
             for tagged_stats in self.run_stats:
-                value_array.append([tagged_stats.tag, tagged_stats.stats["total_count"]])  # storing tags as well
+                value_array.append([tagged_stats.tag, tagged_stats.stats["cumulative_value"]])  # storing tags as well
 
-            value_array.sort(key=lambda x: x[1])  # sorting according to total_count
+            value_array.sort(key=lambda x: x[1])  # sorting according to cumulative_value
             print(len(value_array), value_array)
             filtered_tags = [row[0] for row in value_array[-20:]]  # Top 20 candicates
             print(filtered_tags)
@@ -314,20 +314,19 @@ def validate_benchmark_run(
 
 
 def grid_utilisation(current_run_stats, baseline_stats):
-    global run_time_stats
     current_utilisation = 0;
     base_utilisation = 0;
     for tagged_stats in current_run_stats:
-        current_utilisation += tagged_stats.stats["total_count"]
+        current_utilisation += tagged_stats.stats["cumulative_value"]
     for tagged_stats in baseline_stats:
-        base_utilisation += tagged_stats.stats["total_count"]
+        base_utilisation += tagged_stats.stats["cumulative_value"]
 
     grid_utilisation_metric = Metric("Grid Utilisation",
                                      'DUMMY',
                                      threshold=20)
     grid_utilisation_metric.set_category(Category.GRID)
-    current_stat = current_utilisation / (10 * run_time_stats.totol_current_time)
-    base_stat = base_utilisation / (10 * run_time_stats.total_base_time)
+    current_stat = current_utilisation / (10 * RuntimeStats.totol_current_time)
+    base_stat = base_utilisation / (10 * RuntimeStats.total_base_time)
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)
     mark_result = TagMetricChangeResult(tag=None, current_value=current_stat, baseline_value=base_stat,
@@ -390,10 +389,10 @@ def filtered_stats(df, tag=None):
     x = df['value'].to_numpy()
     restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
     x = x[x >= 0]
-    total_count = x.sum()
+    cumulative_value = x.sum()
     y = pd.DataFrame({'value': x})
     percentiles = y['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
-    uptime = pd.Series([restart_count, total_count], index=['restart', 'total_count'])
+    uptime = pd.Series([restart_count, cumulative_value], index=['restart', 'cumulative_value'])
     percentiles_uptime = pd.concat([percentiles, uptime])
     return TaggedStats(tag, percentiles_uptime)

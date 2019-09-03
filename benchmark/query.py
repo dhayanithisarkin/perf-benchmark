@@ -5,6 +5,7 @@ from benchmark.utils import response_tostats
 from enum import Enum, auto
 import pandas as pd
 import numpy as np
+import math
 
 prod_config = wavefront_api_client.Configuration()
 prod_config.host = "https://varca.wavefront.com"
@@ -17,6 +18,12 @@ test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
 # create an instance of the API class
 did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
+lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
+
+
+class RuntimeStats():
+    totol_current_time = -1
+    total_base_time = -1
 
 
 # Priority of metrics. High priority metric breaches will
@@ -60,7 +67,7 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', thresold=20):
+    def __init__(self, name, query, compare_with='mean', threshold=20, lower_the_better=True):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -72,7 +79,8 @@ class Metric:
         self.priority = Priority.LOW
         self.category = Category.UNKNOWN
         self.compare_with = compare_with
-        self.thresold = thresold
+        self.threshold = threshold
+        self.lower_the_better = lower_the_better
 
     def set_priority(self, priority):
         self.priority = priority
@@ -142,19 +150,51 @@ class TaggedValidationResult:
     def set_baseline_stats(self, baseline_stats):
         self.baseline_stats = baseline_stats
 
+    def get_filtered_tags(self):
+        if self.metric.name in lst:
+            # value_array = []
+            # total_sum = 0
+            # for tagged_stats in self.run_stats:
+            #     total_sum += tagged_stats.stats["cumulative_value"]  # Getting Days reading
+            #     value_array.append([tagged_stats.tag, tagged_stats.stats["cumulative_value"]])  # storing tags as well
+            # value_array.sort(key=lambda x: x[1])  # sorting according to cumulative_value
+            #
+            # threshold = total_sum * 0.01  # to threshold
+            # sum = 0
+            # print(value_array)
+            # for i in range(0, len(value_array)):
+            #     sum += value_array[i][1]
+            #     if sum > threshold:  # As soon as sum reaches thresholded value, break and store rest of tags
+            #         break
+            #     # print(sum,total_sum,i)
+            # filtered_tags = [row[0] for row in value_array[i:]]
+            value_array = []
+            for tagged_stats in self.run_stats:
+                value_array.append([tagged_stats.tag, tagged_stats.stats["cumulative_value"]])  # storing tags as well
+
+            value_array.sort(key=lambda x: x[1])  # sorting according to cumulative_value
+            print(len(value_array), value_array)
+            filtered_tags = [row[0] for row in value_array[-20:]]  # Top 20 candicates
+            print(filtered_tags)
+            return filtered_tags
+        else:
+            return [row.tag for row in self.run_stats]
+
     def analyse(self):
         """
         Analyse the stats and identify pass/failure
         Returns nothing but stores the state of the analysis self.tag_to_change_results
         """
+        filtered_tags = self.get_filtered_tags()
         tag_to_change_results = {}
         for tagged_stats in self.run_stats:
             tag = tagged_stats.tag
             if not tagged_stats.is_empty():
-                current_value = tagged_stats.stats[self.metric.compare_with]
-                change_result = TagMetricChangeResult(tag, current_value)
-                change_result.set_current_percentiles(tagged_stats.stats)
-                tag_to_change_results[tag] = change_result
+                if tagged_stats.tag in filtered_tags:
+                    current_value = tagged_stats.stats[self.metric.compare_with]
+                    change_result = TagMetricChangeResult(tag, current_value)
+                    change_result.set_current_percentiles(tagged_stats.stats)
+                    tag_to_change_results[tag] = change_result
         if self.baseline_stats is not None:
             for bl_tagged_stats in self.baseline_stats:
                 tag = bl_tagged_stats.tag
@@ -162,10 +202,9 @@ class TaggedValidationResult:
                     baseline_value = bl_tagged_stats.stats[self.metric.compare_with]
                     if tag in tag_to_change_results:
                         tag_to_change_results[tag].baseline_value = baseline_value
-                    else:
-                        tag_to_change_results[tag] = TagMetricChangeResult(tag, None, baseline_value)
-                    tag_to_change_results[tag].set_baseline_percentiles(bl_tagged_stats.stats)
-                else:
+                elif tag in tag_to_change_results:
+                    tag_to_change_results[tag].baseline_value = None
+                elif tag in filtered_tags:
                     tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
         self.__mark_failures(tag_to_change_results)
         self.tag_to_change_results = tag_to_change_results
@@ -184,7 +223,11 @@ class TaggedValidationResult:
                 change_result.is_failure = False
             elif bv is None or cv is None:
                 change_result.is_failure = True
-            elif 100 * abs(bv - cv) / abs(bv) > self.metric.thresold:
+            elif self.metric.lower_the_better and cv < bv:
+                change_result.is_failure = False
+            elif (not self.metric.lower_the_better) and bv < cv:
+                change_result.is_failure = False
+            elif 100 * abs(bv - cv) / abs(bv) > self.metric.threshold:
                 change_result.is_failure = True
 
 
@@ -248,14 +291,14 @@ def validate_benchmark_run(
     for metric in metrics:
         print("Fetching metric : " + metric.name)
         current_run_response = query_wf(metric.query, run_timerange)
-        current_run_stats = response_tostats(current_run_response, stats)
+        current_run_stats = response_tostats(current_run_response, filtered_stats)
 
         if metric.category != Category.UPTIME:
             result = TaggedValidationResult(metric, current_run_stats)
             # print(current_run_stats[0].stats['restart'])
             if baseline_timerange:
                 baseline_response = query_wf(metric.query, baseline_timerange)
-                baseline_stats = response_tostats(baseline_response, stats)
+                baseline_stats = response_tostats(baseline_response, filtered_stats)
                 result.set_baseline_stats(baseline_stats)
             result.analyse()
             validation_results.append(result)
@@ -263,8 +306,33 @@ def validate_benchmark_run(
             result = TaggedValidationResultUptime(metric, current_run_stats)
             result.analyse()
             uptime_results.append(result)
+        if metric.name == "Program time":
+            result = grid_utilisation(current_run_stats, baseline_stats)
+            validation_results.append(result)
 
     return validation_results, uptime_results
+
+
+def grid_utilisation(current_run_stats, baseline_stats):
+    current_utilisation = 0;
+    base_utilisation = 0;
+    for tagged_stats in current_run_stats:
+        current_utilisation += tagged_stats.stats["cumulative_value"]
+    for tagged_stats in baseline_stats:
+        base_utilisation += tagged_stats.stats["cumulative_value"]
+
+    grid_utilisation_metric = Metric("Grid Utilisation",
+                                     'DUMMY',
+                                     threshold=20)
+    grid_utilisation_metric.set_category(Category.GRID)
+    current_stat = current_utilisation / (10 * RuntimeStats.totol_current_time)
+    base_stat = base_utilisation / (10 * RuntimeStats.total_base_time)
+    result = TaggedValidationResult(grid_utilisation_metric, current_stat)
+    result.set_baseline_stats(base_stat)
+    mark_result = TagMetricChangeResult(tag=None, current_value=current_stat, baseline_value=base_stat,
+                                        is_failure=False)
+    result.tag_to_change_results = {None: mark_result}
+    return result
 
 
 def query_wf(
@@ -308,12 +376,23 @@ def stats(df, tag=None):
     # It means program has restarted.
     x = df['value'].to_numpy()
     restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
-
     percentiles = df['value'].describe(
         percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
     # Append the restart count value to the stats.
     # This is useful while doing uptime check for restarts.
     uptime = pd.Series([restart_count], index=['restart'])
-
     percentiles_uptime = percentiles.append(uptime, verify_integrity=True)
+    return TaggedStats(tag, percentiles_uptime)
+
+
+def filtered_stats(df, tag=None):
+    x = df['value'].to_numpy()
+    restart_count = (np.ediff1d(x, to_begin=0) < 0).sum()
+    x = x[x >= 0]
+    cumulative_value = x.sum()
+    y = pd.DataFrame({'value': x})
+    percentiles = y['value'].describe(
+        percentiles=[0.10, 0.25, 0.5, 0.75, 0.9, 0.95])
+    uptime = pd.Series([restart_count, cumulative_value], index=['restart', 'cumulative_value'])
+    percentiles_uptime = pd.concat([percentiles, uptime])
     return TaggedStats(tag, percentiles_uptime)

@@ -6,20 +6,25 @@ fi
 cmd="python ./benchmark/driver.py"
 
 read -p "Enter DID (Default[Home Depot] = DP10XVX) : " DID
+read -p "Enter Start of Current Time Frame [YYYY-MM-DD-HH] (Default yesterday's time): " cs
+read -p "Enter End of Current Time Frame [YYYY-MM-DD-HH] (Default current time): " ce
+read -p "Enter Start of Base Time Frame [YYYY-MM-DD-HH] (Default day before yesterday's time): " bs
+read -p "Enter End of Base Time Frame [YYYY-MM-DD-HH] (Default yesterday's time): " be
+
 if ! test -z "$DID"; then
   cmd="$cmd -did $DID"
 fi
-read -p "Enter Window (Default 1 day): " w
-if ! test -z "$w"; then
-  cmd="$cmd -w $w"
+if ! test -z "$cs"; then
+  cmd="$cmd -cs $cs"
 fi
-read -p "Enter Current Time (Default 0): " cw
-if ! test -z "$cw"; then
-  cmd="$cmd -cw $cw"
+if ! test -z "$ce"; then
+  cmd="$cmd -ce $ce"
 fi
-read -p "Enter Base Time (Default 1): " bw
-if ! test -z "$bw"; then
-  cmd="$cmd -bw $bw"
+if ! test -z "$bs"; then
+  cmd="$cmd -bs $bs"
+fi
+if ! test -z "$be"; then
+  cmd="$cmd -be $be"
 fi
 
 eval $cmd

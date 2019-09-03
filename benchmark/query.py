@@ -5,23 +5,27 @@ from benchmark.utils import response_tostats
 from enum import Enum, auto
 import pandas as pd
 import numpy as np
-import math
+from urllib3.exceptions import MaxRetryError
 
 prod_config = wavefront_api_client.Configuration()
 prod_config.host = "https://varca.wavefront.com"
 prod_config.api_key['X-AUTH-TOKEN'] = '10a79735-3ed2-4cbd-bb3b-5ddecf2a06f7'
-
-test_config = wavefront_api_client.Configuration()
-test_config.host = "https://xyz.wavefront.com"
-test_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
-
 # create an instance of the API class
-did = 'DP8SZFH'  # Homedepot
 prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(prod_config))
+
+try:
+    symphony_config = wavefront_api_client.Configuration()
+    symphony_config.host = "https://symphony.wavefront.com"
+    symphony_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
+
+    symphony_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(symphony_config))
+except Exception as e:
+    symphony_api_instance = None
+
 lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
 
 
-class RuntimeStats():
+class RuntimeObjects():
     totol_current_time = -1
     total_base_time = -1
 
@@ -67,7 +71,8 @@ class Process(Enum):
 
 # Class to define a metric object
 class Metric:
-    def __init__(self, name, query, compare_with='mean', threshold=20, lower_the_better=True):
+    def __init__(self, name, query, category=Category.UNKNOWN, compare_with='mean', threshold=20,
+                 lower_the_better=True, wavefront="varca"):
         """
         :param name: The name of the metric (e.g: Average message age)
         :param query: The wavefront query used to get the metric time series.
@@ -77,10 +82,11 @@ class Metric:
         self.name = name
         self.query = query
         self.priority = Priority.LOW
-        self.category = Category.UNKNOWN
+        self.category = category
         self.compare_with = compare_with
         self.threshold = threshold
         self.lower_the_better = lower_the_better
+        self.wavefront = wavefront
 
     def set_priority(self, priority):
         self.priority = priority
@@ -290,14 +296,14 @@ def validate_benchmark_run(
     uptime_results = []
     for metric in metrics:
         print("Fetching metric : " + metric.name)
-        current_run_response = query_wf(metric.query, run_timerange)
+        current_run_response = query_wf(metric, run_timerange)
         current_run_stats = response_tostats(current_run_response, filtered_stats)
 
         if metric.category != Category.UPTIME:
             result = TaggedValidationResult(metric, current_run_stats)
             # print(current_run_stats[0].stats['restart'])
             if baseline_timerange:
-                baseline_response = query_wf(metric.query, baseline_timerange)
+                baseline_response = query_wf(metric, baseline_timerange)
                 baseline_stats = response_tostats(baseline_response, filtered_stats)
                 result.set_baseline_stats(baseline_stats)
             result.analyse()
@@ -323,12 +329,14 @@ def grid_utilisation(current_run_stats, baseline_stats):
 
     grid_utilisation_metric = Metric("Grid Utilisation",
                                      'DUMMY',
-                                     threshold=20)
-    grid_utilisation_metric.set_category(Category.GRID)
-    current_stat = current_utilisation / (10 * RuntimeStats.totol_current_time)
-    base_stat = base_utilisation / (10 * RuntimeStats.total_base_time)
+                                     threshold=20, category=Category.GRID)
+    current_stat = current_utilisation / (10 * RuntimeObjects.totol_current_time)
+    base_stat = base_utilisation / (10 * RuntimeObjects.total_base_time)
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)
+
+    ## Always Passed.
+
     mark_result = TagMetricChangeResult(tag=None, current_value=current_stat, baseline_value=base_stat,
                                         is_failure=False)
     result.tag_to_change_results = {None: mark_result}
@@ -336,7 +344,7 @@ def grid_utilisation(current_run_stats, baseline_stats):
 
 
 def query_wf(
-        query_str,
+        metric,
         time_range,
 ):
     """
@@ -347,12 +355,14 @@ def query_wf(
     """
     start_time = time_range[0]
     end_time = time_range[1]
+    query_str = metric.query
+    wavefront_to_query = prod_api_instance if metric.wavefront == "varca" else symphony_api_instance
 
     granularity = 'h'  # minutely granularity
     try:
         # Perform a charting query against Wavefront servers that
         # returns the appropriate points in the specified time window and granularity
-        api_response = prod_api_instance.query_api(
+        api_response = wavefront_to_query.query_api(
             q=query_str, s=start_time, g=granularity, e=end_time,
             i=True, auto_events=False, summarization='MEAN',
             list_mode=True, strict=True, include_obsolete_metrics=False,

@@ -330,8 +330,9 @@ def grid_utilisation(current_run_stats, baseline_stats):
     grid_utilisation_metric = Metric("Grid Utilisation",
                                      'DUMMY',
                                      threshold=20, category=Category.GRID)
-    current_stat = current_utilisation / (10 * RuntimeObjects.totol_current_time)
-    base_stat = base_utilisation / (10 * RuntimeObjects.total_base_time)
+    # Unit for program time in miliseconds.
+    current_stat = (current_utilisation*100) / (1000 * RuntimeObjects.totol_current_time)
+    base_stat = (base_utilisation*100) / (1000 * RuntimeObjects.total_base_time)
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)
 

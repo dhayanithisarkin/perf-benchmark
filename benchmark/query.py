@@ -16,7 +16,7 @@ prod_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient
 try:
     symphony_config = wavefront_api_client.Configuration()
     symphony_config.host = "https://symphony.wavefront.com"
-    symphony_config.api_key['X-AUTH-TOKEN'] = 'TODO-FILL-THIS'
+    symphony_config.api_key['X-AUTH-TOKEN'] = 'e2b2f93e-0ce4-4757-8f4d-2a67e41ac57a'
 
     symphony_api_instance = wavefront_api_client.QueryApi(wavefront_api_client.ApiClient(symphony_config))
 except Exception as e:
@@ -46,6 +46,7 @@ class Category(Enum):
     INDEXER = 4
     REST_API = 5
     UPTIME = 6
+    SYMPHONY = 7
 
 
 # Various skus in the system
@@ -331,8 +332,8 @@ def grid_utilisation(current_run_stats, baseline_stats):
                                      'DUMMY',
                                      threshold=20, category=Category.GRID)
     # Unit for program time in miliseconds.
-    current_stat = (current_utilisation*100) / (1000 * RuntimeObjects.totol_current_time)
-    base_stat = (base_utilisation*100) / (1000 * RuntimeObjects.total_base_time)
+    current_stat = (current_utilisation * 100) / (1000 * RuntimeObjects.totol_current_time)
+    base_stat = (base_utilisation * 100) / (1000 * RuntimeObjects.total_base_time)
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)
 

@@ -15,7 +15,7 @@
 
 \begin{document}
 %\begin{landscape}
-\textbf{Result of Indexer Metrices}\\
+\textbf{Result of Validation Metrices}\\
 \pgfplotstabletypeset[%
 	font=\scriptsize,
 	header=false,
@@ -75,6 +75,35 @@
 		},
 	col sep=colon]{"./tmp/benchmark_result_g.csv"}
 
+\textbf{Result of Symphony Metrices}\\
+\pgfplotstabletypeset[%
+	font={\scriptsize},
+	header=false,
+	begin table=\begin{longtable},
+	end table=\end{longtable},
+	verb string type,
+	before row=\hline,every last row/.style={after row=\hline},
+	display columns/0/.style={
+		column name=\textbf{{Metric}},
+		column type={|m{11cm}}
+		},
+	display columns/1/.style={
+		column name=\textbf{{Base Value}},
+		column type={|c}
+		},
+	display columns/2/.style={
+		column name=\textbf{{Current Value}},
+		column type={|c}
+		},
+	display columns/3/.style={
+		column name=\textbf{{Result}},
+		column type={|c|},
+		postproc cell content/.append code={
+		\testmatchingchar{##1}{1}{P}
+        \ifmatchingchar \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{green}{##1}} \else \pgfkeyssetvalue{/pgfplots/table/@cell content}{\cellcolor{red}{##1}} \fi
+		},
+		},
+	col sep=colon]{"./tmp/benchmark_result_s.csv"}
 \begin{center}
 \textbf{Result of Uptime Metrices}\\
 \pgfplotstabletypeset[%

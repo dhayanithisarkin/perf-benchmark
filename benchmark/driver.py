@@ -84,7 +84,16 @@ for p in Process:
                compare_with='restart', threshold=20, category=Category.UPTIME)
     uptime_metrics.append(m)
 
+# Symphony Metrics
+symphony_metrics = []
+
+ui_response_time = Metric("UI Response Time", "avg(ts(scaleperf.vrni.ui.responsetime, environment=jazz))",
+                          category=Category.SYMPHONY, wavefront="symphony")
+
+symphony_metrics.append(ui_response_time)
+
 metrics = [disk_util, message_age, input_sdm]
+metrics.extend(symphony_metrics)
 metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)

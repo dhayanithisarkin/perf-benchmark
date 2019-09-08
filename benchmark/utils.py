@@ -6,7 +6,6 @@ import pandas as pd
 def to_epoch_range(start, end):
     start_epoch = time.mktime(start.timetuple())
     end_epoch = time.mktime(end.timetuple())
-
     return start_epoch * 1000, end_epoch * 1000
 
 

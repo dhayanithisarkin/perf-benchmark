@@ -28,6 +28,7 @@ lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
 class RuntimeObjects():
     totol_current_time = -1
     total_base_time = -1
+    info = None
 
 
 # Priority of metrics. High priority metric breaches will

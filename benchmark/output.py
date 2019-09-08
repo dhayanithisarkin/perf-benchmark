@@ -1,6 +1,7 @@
 import csv
 from benchmark.query import TaggedValidationResult
 from benchmark.query import TaggedValidationResultUptime, Category
+from benchmark.query import RuntimeObjects
 import collections
 
 
@@ -11,6 +12,7 @@ def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results:
     uptime_lines = []
     benchmark_result = './tmp/benchmark_result'
     uptimeinfo = './tmp/uptime_result.csv'
+    infofile = './tmp/infofile'
 
     for result in validation_results:
         metric = result.metric
@@ -49,4 +51,7 @@ def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results:
     with open(uptimeinfo, 'w') as writeFile:
         writer = csv.writer(writeFile, delimiter=':')
         writer.writerows(uptime_lines)
+    writeFile.close()
+    with open(infofile, 'w') as writeFile:
+        writeFile.write(RuntimeObjects.info)
     writeFile.close()

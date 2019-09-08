@@ -12,9 +12,14 @@
 \usepackage{colortbl,dcolumn}
 \usepackage{stringstrings}
 \usepackage{longtable}
+\usepackage{verbatim}
+
 
 \begin{document}
 %\begin{landscape}
+
+\verbatiminput{./tmp/infofile}
+
 \textbf{Result of Validation Metrices}\\
 \pgfplotstabletypeset[%
 	font=\scriptsize,

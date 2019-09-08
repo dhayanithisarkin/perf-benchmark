@@ -22,8 +22,13 @@ parser.add_argument("-be", "--base-end", type=str, help="End of Base Time Frame"
 
 args = parser.parse_args()
 did = args.did
-print("Current stats from:", args.current_start, "to", args.current_end)
-print("Base stats from:", args.base_start, "to", args.base_end)
+
+info = "For DID=" + did + "\n"
+info += "Current stats from: " + args.current_start + " to " + args.current_end + "\n"
+info += "Base stats from: " + args.base_start + " to " + args.base_end + "\n"
+
+RuntimeObjects.info = info
+print(info)
 # baseline_time = timerange_daybeforeyesterday()
 # run_time = timerange_yesterday()
 RuntimeObjects.totol_current_time = (

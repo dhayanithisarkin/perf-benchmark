@@ -14,7 +14,6 @@ def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results:
 
     for result in validation_results:
         metric = result.metric
-
         for tag, change_result in result.tag_to_change_results.items():
             line = [
                 metric.name + '.' + (tag or ''),
@@ -37,7 +36,7 @@ def convert_to_csv(validation_results: [TaggedValidationResult], uptime_results:
 
     with open(benchmark_result + '.csv', 'w') as writeFile:
         writer = csv.writer(writeFile, delimiter=':')
-        writer.writerows(validation_lines[Category.UNKNOWN])
+        writer.writerows(validation_lines[Category.INDEXER]+ validation_lines[Category.UNKNOWN])
     writeFile.close()
     with open(benchmark_result + '_g.csv', 'w') as writeFile:
         writer = csv.writer(writeFile, delimiter=':')

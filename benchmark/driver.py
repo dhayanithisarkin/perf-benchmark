@@ -63,16 +63,22 @@ grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, obje
 
 # Indexer metrics
 index_lag = Metric("Indexer Lag",
-                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20, category=Category.INDEXER)
+                   'time()*1000 - ts(dd.vRNI.ConfigIndexerHelper.bookmark, did="{}")'.format(did), threshold=20,
+                   category=Category.INDEXER)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
                                threshold=20, category=Category.INDEXER)
-es_heap_usage = Metric("ES Heap usage",
-                       'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), threshold=20, category=Category.INDEXER)
+es_heap_usage_avg = Metric("ES Heap usage (Average)",
+                           'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), threshold=20,
+                           category=Category.INDEXER)
+es_heap_usage_max = Metric("ES Heap usage (Max)",
+                           'max(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), compare_with='max', threshold=20,
+                           category=Category.INDEXER)
 indexer_metrics = [
     index_lag,
     indexed_docs_per_hour,
-    es_heap_usage]
+    es_heap_usage_avg,
+    es_heap_usage_max]
 
 # uptime metrics
 uptime_metrics = []
@@ -87,7 +93,7 @@ for p in Process:
 # Symphony Metrics
 symphony_metrics = []
 
-ui_response_time = Metric("UI Response Time", "avg(ts(scaleperf.vrni.ui.responsetime, environment=jazz))",
+ui_response_time = Metric("UI Response Time", "ts(scaleperf.vrni.ui.responsetime, environment=jazz)",
                           category=Category.SYMPHONY, wavefront="symphony")
 
 symphony_metrics.append(ui_response_time)
@@ -98,5 +104,5 @@ metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
 metrics.extend(uptime_metrics)
 
-validation_results, uptime_results = validate_benchmark_run(metrics, baseline_time, run_time)
+validation_results, uptime_results = validate_benchmark_run(metrics, run_time, baseline_time)
 convert_to_csv(validation_results, uptime_results)

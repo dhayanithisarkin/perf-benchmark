@@ -180,9 +180,9 @@ class TaggedValidationResult:
                 value_array.append([tagged_stats.tag, tagged_stats.stats["cumulative_value"]])  # storing tags as well
 
             value_array.sort(key=lambda x: x[1])  # sorting according to cumulative_value
-            print(len(value_array), value_array)
+            # print(len(value_array), value_array)
             filtered_tags = [row[0] for row in value_array[-20:]]  # Top 20 candicates
-            print(filtered_tags)
+            # print(filtered_tags)
             return filtered_tags
         else:
             return [row.tag for row in self.run_stats]

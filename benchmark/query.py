@@ -1,7 +1,7 @@
 from __future__ import print_function
 import wavefront_api_client
 from wavefront_api_client.rest import ApiException
-from benchmark.utils import response_tostats
+from benchmark.utils import response_tostats, RuntimeObjects
 from enum import Enum, auto
 import pandas as pd
 import numpy as np

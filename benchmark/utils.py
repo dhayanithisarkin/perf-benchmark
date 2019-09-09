@@ -3,6 +3,8 @@ import pandas as pd
 import calendar
 import argparse
 
+## Mapping between varca did and symphony environment
+did_environment_mapping = {"DPSZ9NG" : "jazz"}
 
 class RuntimeObjects():
     total_current_time = -1
@@ -18,8 +20,6 @@ def argument_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
-    parser.add_argument("-se", "--symphony-env", type=str, help="Environment for symphony wavefront",
-                        default="jazz")  # "DP10XVX")
     parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame(UTC)",
                         default=yesterdays_time.strftime("%Y-%m-%d-%H"))
     parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame(UTC)",
@@ -31,7 +31,10 @@ def argument_parser():
 
     args = parser.parse_args()
     did = args.did
-    environment = args.symphony_env
+    if did in did_environment_mapping:
+        environment = did_environment_mapping[did]
+    else:
+        environment = ""
     info = "For DID = " + did + " and Environment = " + environment + "\n"
     info += "Current stats from: " + args.current_start + " to " + args.current_end + "\n"
     info += "Base stats from: " + args.base_start + " to " + args.base_end + "\n"

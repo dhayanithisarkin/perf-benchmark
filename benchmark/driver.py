@@ -29,7 +29,7 @@ grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, obje
 
 # Indexer metrics
 index_lag = Metric("Indexer Lag",
-                   'time()*1000 - ts(dd.vRNI.ConfigIndexerHelper.bookmark, did="{}")'.format(did), threshold=20,
+                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20,
                    category=Category.INDEXER)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
@@ -58,11 +58,12 @@ for p in Process:
 
 # Symphony Metrics
 symphony_metrics = []
-
-ui_response_time = Metric("UI Response Time", "ts(scaleperf.vrni.ui.responsetime, environment={})".format(environment),
+# Only if corresponding environment in symphony exist for this did
+if environment is not "":
+    ui_response_time = Metric("UI Response Time", "ts(scaleperf.vrni.ui.responsetime, environment={})".format(environment),
                           category=Category.SYMPHONY, wavefront="symphony")
 
-symphony_metrics.append(ui_response_time)
+    symphony_metrics.append(ui_response_time)
 
 metrics = [disk_util, message_age, input_sdm]
 metrics.extend(symphony_metrics)

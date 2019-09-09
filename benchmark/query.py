@@ -22,7 +22,8 @@ try:
 except Exception as e:
     symphony_api_instance = None
 
-lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
+# Metrices for whom we take only top K candidates. 20 in this case
+lst = ["Program time", "Denorm Latency By Object Type", "Input SDM", "Object Churn"]
 
 
 # Priority of metrics. High priority metric breaches will

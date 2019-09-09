@@ -6,7 +6,6 @@ fi
 cmd="python ./benchmark/driver.py"
 if test -z "$1"; then
   read -p "Enter DID (Default[Home Depot] = DP10XVX) : " DID
-  read -p "Enter Environment for Symphony Wavefront (Default jazz) : " se
   read -p "Enter Start of Current Time Frame [YYYY-MM-DD-HH] (Default yesterday's time): " cs
   read -p "Enter End of Current Time Frame [YYYY-MM-DD-HH] (Default current time): " ce
   read -p "Enter Start of Base Time Frame [YYYY-MM-DD-HH] (Default day before yesterday's time): " bs
@@ -14,9 +13,6 @@ if test -z "$1"; then
 
   if ! test -z "$DID"; then
     cmd="$cmd -did $DID"
-  fi
-  if ! test -z "$se"; then
-    cmd="$cmd -se $se"
   fi
   if ! test -z "$cs"; then
     cmd="$cmd -cs $cs"

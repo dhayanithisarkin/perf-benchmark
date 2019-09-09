@@ -12,13 +12,13 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
 parser.add_argument("-se","--symphony-env", type=str, help="Environment for symphony wavefront", default="jazz")  # "DP10XVX")
-parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame",
+parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame(UTC)",
                     default=yesterdays_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame",
+parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame(UTC)",
                     default=current_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-bs", "--base-start", type=str, help="Start of Base Time Frame",
+parser.add_argument("-bs", "--base-start", type=str, help="Start of Base Time Frame(UTC)",
                     default=day_before_yesterdays_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-be", "--base-end", type=str, help="End of Base Time Frame",
+parser.add_argument("-be", "--base-end", type=str, help="End of Base Time Frame(UTC)",
                     default=yesterdays_time.strftime("%Y-%m-%d-%H"))
 
 args = parser.parse_args()
@@ -32,7 +32,7 @@ RuntimeObjects.info = info
 print(info)
 # baseline_time = timerange_daybeforeyesterday()
 # run_time = timerange_yesterday()
-RuntimeObjects.totol_current_time = (
+RuntimeObjects.total_current_time = (
         datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.base_start,
                                                                                               "%Y-%m-%d-%H")).total_seconds();
 RuntimeObjects.total_base_time = (

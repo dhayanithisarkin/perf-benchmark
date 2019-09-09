@@ -26,7 +26,7 @@ lst = ["Program time", "Denorm Latency By Object Type", "Input SDM"]
 
 
 class RuntimeObjects():
-    totol_current_time = -1
+    total_current_time = -1
     total_base_time = -1
     info = None
 
@@ -333,7 +333,7 @@ def grid_utilisation(current_run_stats, baseline_stats):
                                      'DUMMY',
                                      threshold=20, category=Category.GRID)
     # Unit for program time in miliseconds.
-    current_stat = (current_utilisation * 100) / (1000 * RuntimeObjects.totol_current_time)
+    current_stat = (current_utilisation * 100) / (1000 * RuntimeObjects.total_current_time)
     base_stat = (base_utilisation * 100) / (1000 * RuntimeObjects.total_base_time)
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)

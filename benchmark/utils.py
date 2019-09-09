@@ -1,11 +1,11 @@
 import datetime
-import time
 import pandas as pd
+import calendar
 
-
+# converts to epoch. the start and end times are assumed to be in UTC timezone.
 def to_epoch_range(start, end):
-    start_epoch = time.mktime(start.timetuple())
-    end_epoch = time.mktime(end.timetuple())
+    start_epoch = calendar.timegm(start.timetuple())
+    end_epoch = calendar.timegm(end.timetuple())
     return start_epoch * 1000, end_epoch * 1000
 
 

@@ -1,7 +1,7 @@
 import csv
 from benchmark.query import TaggedValidationResult
 from benchmark.query import TaggedValidationResultUptime, Category
-from benchmark.query import RuntimeObjects
+from benchmark.utils import RuntimeObjects
 import collections
 
 

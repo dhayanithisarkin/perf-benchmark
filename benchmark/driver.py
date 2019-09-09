@@ -28,8 +28,11 @@ denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
 grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, object_churn]
 
 # Indexer metrics
-index_lag = Metric("Indexer Lag",
+index_lag_new = Metric("Indexer Lag",
                    'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20,
+                   category=Category.INDEXER)
+index_lag_old = Metric("Indexer Lag(old)",
+                   'time()*1000 - ts(dd.vRNI.ConfigIndexerHelper.bookmark, did="{}")'.format(did), threshold=20,
                    category=Category.INDEXER)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
@@ -41,10 +44,11 @@ es_heap_usage_max = Metric("ES Heap usage (Max)",
                            'max(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), compare_with='max', threshold=20,
                            category=Category.INDEXER)
 indexer_metrics = [
-    index_lag,
+    index_lag_old,
+    index_lag_new,
     indexed_docs_per_hour,
     es_heap_usage_avg,
-    es_heap_usage_max]
+    es_heap_usage_max ]
 
 # uptime metrics
 uptime_metrics = []

@@ -1,6 +1,57 @@
 import datetime
 import pandas as pd
 import calendar
+import argparse
+
+
+class RuntimeObjects():
+    total_current_time = -1
+    total_base_time = -1
+    info = None
+
+
+def argument_parser():
+    current_time = datetime.datetime.now()
+    yesterdays_time = current_time - datetime.timedelta(days=1)
+    day_before_yesterdays_time = current_time - datetime.timedelta(days=2)
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
+    parser.add_argument("-se", "--symphony-env", type=str, help="Environment for symphony wavefront",
+                        default="jazz")  # "DP10XVX")
+    parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame(UTC)",
+                        default=yesterdays_time.strftime("%Y-%m-%d-%H"))
+    parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame(UTC)",
+                        default=current_time.strftime("%Y-%m-%d-%H"))
+    parser.add_argument("-bs", "--base-start", type=str, help="Start of Base Time Frame(UTC)",
+                        default=day_before_yesterdays_time.strftime("%Y-%m-%d-%H"))
+    parser.add_argument("-be", "--base-end", type=str, help="End of Base Time Frame(UTC)",
+                        default=yesterdays_time.strftime("%Y-%m-%d-%H"))
+
+    args = parser.parse_args()
+    did = args.did
+    environment = args.symphony_env
+    info = "For DID = " + did + " and Environment = " + environment + "\n"
+    info += "Current stats from: " + args.current_start + " to " + args.current_end + "\n"
+    info += "Base stats from: " + args.base_start + " to " + args.base_end + "\n"
+
+    RuntimeObjects.info = info
+    print(info)
+
+    RuntimeObjects.total_current_time = (
+            datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.base_start,
+                                                                                                  "%Y-%m-%d-%H")).total_seconds();
+    RuntimeObjects.total_base_time = (
+            datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.current_start,
+                                                                                                     "%Y-%m-%d-%H")).total_seconds();
+
+    baseline_time = to_epoch_range(datetime.datetime.strptime(args.base_start, "%Y-%m-%d-%H"),
+                                   datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H"))
+    run_time = to_epoch_range(datetime.datetime.strptime(args.current_start, "%Y-%m-%d-%H"),
+                              datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H"))
+    return did, environment, baseline_time, run_time
+
 
 # converts to epoch. the start and end times are assumed to be in UTC timezone.
 def to_epoch_range(start, end):

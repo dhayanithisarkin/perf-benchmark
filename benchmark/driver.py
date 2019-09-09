@@ -1,48 +1,8 @@
-from benchmark.utils import to_epoch_range
+from benchmark.utils import argument_parser
 from benchmark.output import convert_to_csv
-from benchmark.query import Metric, validate_benchmark_run, Category, Process, RuntimeObjects
-import argparse
-import datetime
+from benchmark.query import Metric, validate_benchmark_run, Category, Process
 
-current_time = datetime.datetime.now()
-yesterdays_time = current_time - datetime.timedelta(days=1)
-day_before_yesterdays_time = current_time - datetime.timedelta(days=2)
-
-parser = argparse.ArgumentParser()
-
-parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
-parser.add_argument("-se","--symphony-env", type=str, help="Environment for symphony wavefront", default="jazz")  # "DP10XVX")
-parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame(UTC)",
-                    default=yesterdays_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame(UTC)",
-                    default=current_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-bs", "--base-start", type=str, help="Start of Base Time Frame(UTC)",
-                    default=day_before_yesterdays_time.strftime("%Y-%m-%d-%H"))
-parser.add_argument("-be", "--base-end", type=str, help="End of Base Time Frame(UTC)",
-                    default=yesterdays_time.strftime("%Y-%m-%d-%H"))
-
-args = parser.parse_args()
-did = args.did
-environment = args.symphony_env
-info = "For DID = " + did + " and Environment = " + environment + "\n"
-info += "Current stats from: " + args.current_start + " to " + args.current_end + "\n"
-info += "Base stats from: " + args.base_start + " to " + args.base_end + "\n"
-
-RuntimeObjects.info = info
-print(info)
-# baseline_time = timerange_daybeforeyesterday()
-# run_time = timerange_yesterday()
-RuntimeObjects.total_current_time = (
-        datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.base_start,
-                                                                                              "%Y-%m-%d-%H")).total_seconds();
-RuntimeObjects.total_base_time = (
-        datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H") - datetime.datetime.strptime(args.current_start,
-                                                                                                 "%Y-%m-%d-%H")).total_seconds();
-
-baseline_time = to_epoch_range(datetime.datetime.strptime(args.base_start, "%Y-%m-%d-%H"),
-                               datetime.datetime.strptime(args.base_end, "%Y-%m-%d-%H"))
-run_time = to_epoch_range(datetime.datetime.strptime(args.current_start, "%Y-%m-%d-%H"),
-                          datetime.datetime.strptime(args.current_end, "%Y-%m-%d-%H"))
+did, environment, baseline_time, run_time = argument_parser()
 
 disk_util = Metric("disk utilization",
                    'avg(ts(dd.system.io.util, did="{}" and iid="*" and source="*" and role="platform" and device="dm-6"))'.format(
@@ -73,7 +33,7 @@ index_lag = Metric("Indexer Lag",
                    category=Category.INDEXER)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
-                               threshold=20, category=Category.INDEXER)
+                               threshold=20, lower_the_better=False, category=Category.INDEXER)
 es_heap_usage_avg = Metric("ES Heap usage (Average)",
                            'avg(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), threshold=20,
                            category=Category.INDEXER)

@@ -24,16 +24,15 @@ metric_cache_miss_rate = Metric("Miss rate",
 denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
                               'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did),
                               threshold=20, category=Category.GRID)
-
 grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, object_churn]
 
 # Indexer metrics
 index_lag_new = Metric("Indexer Lag",
-                   'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20,
-                   category=Category.INDEXER)
+                       'ts(dd.vRNI.ConfigIndexerHelper.lag, did="{}")'.format(did), threshold=20,
+                       category=Category.INDEXER)
 index_lag_old = Metric("Indexer Lag(old)",
-                   'time()*1000 - ts(dd.vRNI.ConfigIndexerHelper.bookmark, did="{}")'.format(did), threshold=20,
-                   category=Category.INDEXER)
+                       'time()*1000 - ts(dd.vRNI.ConfigIndexerHelper.bookmark, did="{}")'.format(did), threshold=20,
+                       category=Category.INDEXER)
 indexed_docs_per_hour = Metric("Indexed docs per hour",
                                'mdiff(1h, ts(dd.vRNI.ConfigIndexerHelper.indexCount, did="{}"))'.format(did),
                                threshold=20, lower_the_better=False, category=Category.INDEXER)
@@ -43,12 +42,16 @@ es_heap_usage_avg = Metric("ES Heap usage (Average)",
 es_heap_usage_max = Metric("ES Heap usage (Max)",
                            'max(ts(dd.jvm.mem.heap_used, did="{}"))'.format(did), compare_with='max', threshold=20,
                            category=Category.INDEXER)
+gc_collection_time_to_es = Metric("GC Collection Time for ES/Hr",
+                                  'mdiff(1h, ts(dd.jvm.gc.collectors.*.collection_time, did="{}"))'.format(did),
+                                  threshold=20, category=Category.INDEXER)
 indexer_metrics = [
     index_lag_old,
     index_lag_new,
     indexed_docs_per_hour,
     es_heap_usage_avg,
-    es_heap_usage_max ]
+    es_heap_usage_max,
+    gc_collection_time_to_es]
 
 # uptime metrics
 uptime_metrics = []
@@ -64,16 +67,17 @@ for p in Process:
 symphony_metrics = []
 # Only if corresponding environment in symphony exist for this did
 if environment is not "":
-    ui_response_time = Metric("UI Response Time", "ts(scaleperf.vrni.ui.responsetime, environment={})".format(environment),
-                          category=Category.SYMPHONY, wavefront="symphony")
+    ui_response_time = Metric("UI Response Time",
+                              "ts(scaleperf.vrni.ui.responsetime, environment={})".format(environment),
+                              category=Category.SYMPHONY, wavefront="symphony")
 
     symphony_metrics.append(ui_response_time)
 
-metrics = [disk_util, message_age, input_sdm]
-metrics.extend(symphony_metrics)
-metrics.extend(grid_metrics)
+metrics = [disk_util, message_age]  # , input_sdm]
+# metrics.extend(symphony_metrics)
+# metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
-metrics.extend(uptime_metrics)
+# metrics.extend(uptime_metrics)
 
 validation_results, uptime_results = validate_benchmark_run(metrics, run_time, baseline_time)
 convert_to_csv(validation_results, uptime_results)

@@ -362,8 +362,9 @@ def query_wf(
         wavefront_to_query = symphony_api_instance
         granularity = 'd'
         summarization = 'MAX'
-
-    #granularity = 'h'  # minutely granularity
+    # query_str = 'align(1'+granularity+', '+query_str+')'
+    # print(query_str)
+    # granularity = 'h'  # minutely granularity
     try:
         # Perform a charting query against Wavefront servers that
         # returns the appropriate points in the specified time window and granularity

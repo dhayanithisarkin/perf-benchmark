@@ -73,11 +73,11 @@ if environment is not "":
 
     symphony_metrics.append(ui_response_time)
 
-metrics = [disk_util, message_age]  # , input_sdm]
-# metrics.extend(symphony_metrics)
-# metrics.extend(grid_metrics)
+metrics = [disk_util, message_age, input_sdm]
+metrics.extend(symphony_metrics)
+metrics.extend(grid_metrics)
 metrics.extend(indexer_metrics)
-# metrics.extend(uptime_metrics)
+metrics.extend(uptime_metrics)
 
 validation_results, uptime_results = validate_benchmark_run(metrics, run_time, baseline_time)
 convert_to_csv(validation_results, uptime_results)

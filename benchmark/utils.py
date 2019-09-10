@@ -19,7 +19,7 @@ def argument_parser():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-did", type=str, help="did for wavefront", default="DPW74PQ")  # "DP10XVX")
+    parser.add_argument("-did", type=str, help="did for wavefront", default="DPSZ9NG")  # "DP10XVX")
     parser.add_argument("-cs", "--current-start", type=str, help="Start of Current Time Frame(UTC)",
                         default=yesterdays_time.strftime("%Y-%m-%d-%H"))
     parser.add_argument("-ce", "--current-end", type=str, help="End of Current Time Frame(UTC)",

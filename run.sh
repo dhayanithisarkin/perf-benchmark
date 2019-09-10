@@ -31,7 +31,7 @@ else
 fi
 
 eval $cmd
-pdflatex ./benchmark/tex_template.tex
+pdflatex -interaction=batchmode ./benchmark/tex_template.tex
 
 rm tex_template.aux
 rm tex_template.log

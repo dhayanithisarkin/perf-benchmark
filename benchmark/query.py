@@ -354,15 +354,23 @@ def query_wf(
     start_time = time_range[0]
     end_time = time_range[1]
     query_str = metric.query
-    wavefront_to_query = prod_api_instance if metric.wavefront == "varca" else symphony_api_instance
-
-    granularity = 'h'  # minutely granularity
+    if metric.wavefront == "varca":
+        wavefront_to_query = prod_api_instance
+        granularity = 'h'
+        summarization = 'MEAN'
+    else:
+        wavefront_to_query = symphony_api_instance
+        granularity = 'd'
+        summarization = 'MAX'
+    # query_str = 'align(1'+granularity+', '+query_str+')'
+    # print(query_str)
+    # granularity = 'h'  # minutely granularity
     try:
         # Perform a charting query against Wavefront servers that
         # returns the appropriate points in the specified time window and granularity
         api_response = wavefront_to_query.query_api(
             q=query_str, s=start_time, g=granularity, e=end_time,
-            i=True, auto_events=False, summarization='MEAN',
+            i=True, auto_events=False, summarization=summarization,
             list_mode=True, strict=True, include_obsolete_metrics=False,
             sorted=False, cached=True)
         return api_response

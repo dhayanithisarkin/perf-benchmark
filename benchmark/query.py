@@ -209,13 +209,13 @@ class TaggedValidationResult:
                     tag_to_change_results[tag].baseline_value = None
                 elif tag in filtered_tags:
                     tag_to_change_results[tag] = TagMetricChangeResult(tag, None, None)
-        self.__mark_failures(tag_to_change_results)
+        self.mark_failures(tag_to_change_results)
         self.tag_to_change_results = tag_to_change_results
 
     def get_analysis_results(self):
         return self.tag_to_change_results
 
-    def __mark_failures(self, tag_to_change_results):
+    def mark_failures(self, tag_to_change_results):
         for tag, change_result in tag_to_change_results.items():
             bv = change_result.baseline_value
             cv = change_result.current_value
@@ -259,14 +259,14 @@ class TaggedValidationResultUptime:
                 change_result = TagMetricChangeResult(tag, current_value)
                 change_result.set_current_percentiles(tagged_stats.stats)
                 tag_to_change_results[tag] = change_result
-        self.__mark_failures(tag_to_change_results)
+        self.mark_failures(tag_to_change_results)
         self.tag_to_change_results = tag_to_change_results
 
     def get_analysis_results(self):
         return self.tag_to_change_results
 
     @staticmethod
-    def __mark_failures(tag_to_change_results):
+    def mark_failures(tag_to_change_results):
         for tag, change_result in tag_to_change_results.items():
             cv = change_result.current_value
 
@@ -333,11 +333,10 @@ def grid_utilisation(current_run_stats, baseline_stats):
     result = TaggedValidationResult(grid_utilisation_metric, current_stat)
     result.set_baseline_stats(base_stat)
 
-    ## Always Passed.
-
     mark_result = TagMetricChangeResult(tag=None, current_value=current_stat, baseline_value=base_stat,
                                         is_failure=False)
     result.tag_to_change_results = {None: mark_result}
+    result.mark_failures(result.tag_to_change_results)
     return result
 
 

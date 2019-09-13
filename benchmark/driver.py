@@ -24,7 +24,10 @@ metric_cache_miss_rate = Metric("Miss rate",
 denorm_latency_by_ot = Metric("Denorm Latency By Object Type",
                               'avg(ts(dd.vRNI.DenormComputationProgram.latency.mean, did="{}"), ot)'.format(did),
                               threshold=20, category=Category.GRID)
-grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, object_churn]
+sdm_count_by_container = Metric("SDM count by container",
+                               'avg(ts(dd.vRNI.GenericStreamTask.sdm, did="{}"), "_source")'.format(did), threshold=20,
+                               category=Category.GRID)
+grid_metrics = [metric_cache_miss_rate, program_time, denorm_latency_by_ot, object_churn, sdm_count_by_container]
 
 # Indexer metrics
 index_lag_new = Metric("Indexer Lag",
@@ -52,7 +55,6 @@ indexer_metrics = [
     es_heap_usage_avg,
     es_heap_usage_max,
     gc_collection_time_to_es]
-
 # uptime metrics
 uptime_metrics = []
 for p in Process:

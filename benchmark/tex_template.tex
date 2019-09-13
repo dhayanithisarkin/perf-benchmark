@@ -8,17 +8,17 @@
 \usepackage{lscape}
 \usepackage{booktabs, makecell, multirow, tabularx}
 \usepackage{longtable}
-\usepackage{tabu} % if you want
+\usepackage{datetime}
 \usepackage{colortbl,dcolumn}
 \usepackage{stringstrings}
 \usepackage{longtable}
 \usepackage{verbatim}
-
+\usepackage{sverb}
 
 \begin{document}
 %\begin{landscape}
-
-\verbatiminput{./tmp/infofile}
+\verbinput{./tmp/infofile}
+Published on : \today, \hspace{2mm} \currenttime\\
 
 \textbf{Result of Validation Metrices}\\
 \pgfplotstabletypeset[%

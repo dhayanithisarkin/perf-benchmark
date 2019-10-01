@@ -33,5 +33,5 @@ fi
 eval $cmd
 #pdflatex -interaction=batchmode ./benchmark/tex_template.tex
 
-rm tex_template.aux
-rm tex_template.log
+#rm tex_template.aux
+#rm tex_template.log
